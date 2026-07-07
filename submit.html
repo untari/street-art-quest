@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Art — Street Art Quest</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&display=swap');
+    body {
+      overflow: auto;
+      min-height: 100vh;
+    }
+
+    .submit-page {
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 80px 24px 60px;
+    }
+
+    .submit-page h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 52px;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+      line-height: 1;
+    }
+
+    .submit-page p.sub {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      border-radius: 2px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    select option {
+      background: var(--surface);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .radio-option input[type="radio"] {
+      width: auto;
+      accent-color: var(--accent);
+    }
+
+    .radio-option span {
+      font-size: 13px;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border-radius: 2px;
+      cursor: pointer;
+      margin-top: 32px;
+      transition: opacity 0.15s;
+    }
+
+    .submit-btn:hover {
+      opacity: 0.85;
+    }
+
+    .note {
+      margin-top: 16px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .back-link {
+      display: inline-block;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      margin-bottom: 32px;
+      transition: color 0.15s;
+    }
+
+    .back-link:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">STREET ART <span>QUEST</span></div>
+
+  </header>
+
+  <div class="submit-page">
+    <a href="index.html" class="back-link">← Back to map</a>
+    <h1>Add an artwork</h1>
+    <p class="sub">Spotted something? Submit it here. Your submission will be reviewed before it appears on the map.</p>
+
+    <form id="submit-form">
+      <div class="form-group">
+        <label>Artwork title / name</label>
+        <input type="text" id="title" placeholder="e.g. Blue Elephant" />
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Artist name</label>
+          <input type="text" id="artist" placeholder="e.g. Sipros or Unknown" />
+        </div>
+        <div class="form-group">
+          <label>Artist Instagram</label>
+          <input type="text" id="artist_ig" placeholder="@handle (optional)" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Type of artwork</label>
+        <select id="type">
+          <option value="">Select a type</option>
+          <option value="Mural">Mural</option>
+          <option value="Sculpture">Sculpture</option>
+          <option value="Paste-up">Paste-up</option>
+          <option value="Sticker">Sticker</option>
+          <option value="Installation">Installation</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Address / location</label>
+        <input type="text" id="address" placeholder="e.g. Ladder Street, near Man Mo Temple" />
+      </div>
+
+      <div class="form-group">
+        <label>Google Maps location</label>
+        <input type="text" id="maps_link" placeholder="Paste your Google Maps share link" />
+        <div class="hint">Open Google Maps → find the spot → tap Share → Copy link</div>
+      </div>
+
+      <div class="form-group">
+        <label>Photo URL</label>
+        <input type="text" id="photo" placeholder="Paste a link to your photo (optional)" />
+        <div class="hint">Any direct image link works — Google Photos, iCloud, Instagram, etc.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Is it commissioned?</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="commissioned" value="yes" />
+            <span>Yes — official/commissioned</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="commissioned" value="no" />
+            <span>No — unsanctioned</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="commissioned" value="unknown" checked />
+            <span>Not sure</span>
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn">Submit via GitHub →</button>
+      <p class="note">This opens a GitHub issue with your submission pre-filled.<br/>No account needed — just click "Submit new issue".</p>
+    </form>
+  </div>
+
+  <script src="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"></script>
+  <script>
+    const GITHUB_REPO = 'untari/streetartquest';
+
+    document.getElementById('submit-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const title = document.getElementById('title').value.trim();
+      const artist = document.getElementById('artist').value.trim();
+      const artist_ig = document.getElementById('artist_ig').value.trim().replace('@', '');
+      const type = document.getElementById('type').value;
+      const address = document.getElementById('address').value.trim();
+      const maps_link = document.getElementById('maps_link').value.trim();
+      const photo = document.getElementById('photo').value.trim();
+      const commissioned = document.querySelector('input[name="commissioned"]:checked').value;
+
+      if (!title || !type || !maps_link) {
+        alert('Please fill in at least: title, type, and the Google Maps link.');
+        return;
+      }
+
+      const issueTitle = `New artwork: ${title}`;
+      const issueBody = `## New Artwork Submission
+
+**Title:** ${title}
+**Artist:** ${artist || 'Unknown'}
+**Artist Instagram:** ${artist_ig ? '@' + artist_ig : 'N/A'}
+**Type:** ${type}
+**Address:** ${address}
+**Google Maps:** ${maps_link}
+**Photo URL:** ${photo || 'None'}
+**Commissioned:** ${commissioned}
+
+---
+*Submitted via wallofart.github.io/submit*`;
+
+      const url = `https://github.com/${GITHUB_REPO}/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent(issueBody)}&labels=new-artwork`;
+
+      window.open(url, '_blank');
+    });
+  </script>
+</body>
+</html>

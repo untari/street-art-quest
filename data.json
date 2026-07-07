@@ -1,0 +1,69 @@
+{
+  "artworks": [
+    {
+      "id": 1,
+      "title": "Blue Elephant",
+      "artist": "Caratoes",
+      "artist_ig": "caratoes",
+      "type": "Mural",
+      "lat": 22.2836,
+      "lng": 114.1501,
+      "photo": "",
+      "description": "A vivid blue elephant on an old tong lau building near Man Mo Temple.",
+      "commissioned": true,
+      "address": "Hollywood Road, Sheung Wan"
+    },
+    {
+      "id": 2,
+      "title": "Untitled Face",
+      "artist": "Unknown",
+      "artist_ig": "",
+      "type": "Paste-up",
+      "lat": 22.2843,
+      "lng": 114.1495,
+      "photo": "",
+      "description": "A large wheatpaste face on Ladder Street.",
+      "commissioned": false,
+      "address": "Ladder Street, Sheung Wan"
+    },
+    {
+      "id": 3,
+      "title": "Golden Tiger",
+      "artist": "Bao Ho",
+      "artist_ig": "baoho_art",
+      "type": "Mural",
+      "lat": 22.2828,
+      "lng": 114.1510,
+      "photo": "",
+      "description": "A golden tiger climbing the wall at PMQ.",
+      "commissioned": true,
+      "address": "PMQ, Aberdeen Street, Sheung Wan"
+    },
+    {
+      "id": 4,
+      "title": "Red Phoenix",
+      "artist": "XEME",
+      "artist_ig": "xeme_art",
+      "type": "Sticker",
+      "lat": 22.2850,
+      "lng": 114.1488,
+      "photo": "",
+      "description": "A series of red phoenix stickers across Sheung Wan's back lanes.",
+      "commissioned": false,
+      "address": "Possession Street, Sheung Wan"
+    },
+    {
+      "id": 5,
+      "title": "Grandmother",
+      "artist": "Katol",
+      "artist_ig": "katol.art",
+      "type": "Installation",
+      "lat": 22.2820,
+      "lng": 114.1520,
+      "photo": "",
+      "description": "A neon installation of an elderly woman playing mahjong, tucked in a narrow alley.",
+      "commissioned": true,
+      "address": "Gough Street, Sheung Wan"
+    }
+  ]
+}

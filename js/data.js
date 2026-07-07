@@ -1,0 +1,72 @@
+const ARTWORKS = [
+  {
+    "id": 1,
+    "title": "Blue Elephant",
+    "artist": "Caratoes",
+    "artist_ig": "caratoes",
+    "type": "Mural",
+    "lat": 22.2836,
+    "lng": 114.1501,
+    "photo": "",
+    "commissioned": true,
+    "address": "Hollywood Road, Sheung Wan",
+    "hint": "A vivid blue elephant watches over the street from an old tong lau building. You're close to a famous temple.",
+    "radius": 60
+  },
+  {
+    "id": 2,
+    "title": "Untitled Face",
+    "artist": "Unknown",
+    "artist_ig": "",
+    "type": "Paste-up",
+    "lat": 22.2843,
+    "lng": 114.1495,
+    "photo": "",
+    "commissioned": false,
+    "address": "Ladder Street, Sheung Wan",
+    "hint": "A large wheatpasted face stares down from a wall beside a long staircase. Follow the steps.",
+    "radius": 50
+  },
+  {
+    "id": 3,
+    "title": "Golden Tiger",
+    "artist": "Bao Ho",
+    "artist_ig": "baoho_art",
+    "type": "Mural",
+    "lat": 22.2828,
+    "lng": 114.1510,
+    "photo": "",
+    "commissioned": true,
+    "address": "PMQ, Aberdeen Street, Sheung Wan",
+    "hint": "A golden tiger climbs the wall of a converted police barracks turned creative hub on Aberdeen Street.",
+    "radius": 60
+  },
+  {
+    "id": 4,
+    "title": "Red Phoenix",
+    "artist": "XEME",
+    "artist_ig": "xeme_art",
+    "type": "Sticker",
+    "lat": 22.2850,
+    "lng": 114.1488,
+    "photo": "",
+    "commissioned": false,
+    "address": "Possession Street, Sheung Wan",
+    "hint": "A series of red phoenix stickers scattered across back lanes near one of Hong Kong's oldest streets.",
+    "radius": 50
+  },
+  {
+    "id": 5,
+    "title": "Grandmother",
+    "artist": "Katol",
+    "artist_ig": "katol.art",
+    "type": "Installation",
+    "lat": 22.2820,
+    "lng": 114.1520,
+    "photo": "",
+    "commissioned": true,
+    "address": "Gough Street, Sheung Wan",
+    "hint": "A neon elderly woman plays mahjong in a narrow alley. Blink and you'll walk right past her.",
+    "radius": 40
+  }
+];
