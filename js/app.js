@@ -17,6 +17,7 @@ let allArtworks = [];
 let markers = [];
 let activeFilter = 'all';
 let activeQuest = null;
+let miniMapInstance = null;
 
 // ─── Completion state ─────────────────────────────
 
@@ -159,13 +160,20 @@ function renderQuestList() {
 // ─── Quest card ───────────────────────────────────
 
 function openQuestCard(art) {
+  if (miniMapInstance) {
+    miniMapInstance.remove();
+    miniMapInstance = null;
+  }
+
   activeQuest = art;
   const done = isCompleted(art.id);
   const content = document.getElementById('quest-card-content');
 
   const photoHTML = art.photo
     ? `<div class="quest-photo"><img src="${art.photo}" alt="Quest" /></div>`
-    : `<div class="quest-photo-placeholder">${done ? '✓' : '?'}</div>`;
+    : done
+      ? `<div class="quest-photo-placeholder">✓</div>`
+      : `<div id="quest-mini-map" class="quest-mini-map"></div>`;
 
   content.innerHTML = `
     <div class="quest-card-header">
@@ -184,15 +192,45 @@ function openQuestCard(art) {
     }
   `;
 
+  document.getElementById('quest-card').classList.remove('hidden');
+  document.getElementById('quest-backdrop').classList.remove('hidden');
+
+  if (!done && !art.photo) {
+    miniMapInstance = L.map('quest-mini-map', {
+      center: [art.lat, art.lng],
+      zoom: 17,
+      zoomControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      touchZoom: false,
+      attributionControl: false
+    });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 20
+    }).addTo(miniMapInstance);
+    L.circle([art.lat, art.lng], {
+      radius: art.radius || 50,
+      color: '#2ec4b6',
+      fillColor: '#2ec4b6',
+      fillOpacity: 0.18,
+      weight: 2.5
+    }).addTo(miniMapInstance);
+  }
+
   if (!done) {
     document.getElementById('checkin-btn').addEventListener('click', attemptCheckin);
   }
-
-  document.getElementById('quest-card').classList.remove('hidden');
-  document.getElementById('quest-backdrop').classList.remove('hidden');
 }
 
 function closeQuestCard() {
+  if (miniMapInstance) {
+    miniMapInstance.remove();
+    miniMapInstance = null;
+  }
   document.getElementById('quest-card').classList.add('hidden');
   document.getElementById('quest-backdrop').classList.add('hidden');
   activeQuest = null;
