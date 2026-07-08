@@ -1,9 +1,8 @@
-const GITHUB_REPO = 'untari/streetartquest';
 const COMPLETED_KEY = 'saq_completed';
 
 const map = L.map('map', {
-  center: [22.2836, 114.1503],
-  zoom: 16,
+  center: [22.2852, 114.1503],
+  zoom: 15,
   zoomControl: true
 });
 
@@ -18,6 +17,8 @@ let markers = [];
 let activeFilter = 'all';
 let activeQuest = null;
 let miniMapInstance = null;
+let userMarker = null;
+let userCircle = null;
 
 // ─── Completion state ─────────────────────────────
 
@@ -86,10 +87,6 @@ function openPanel(art) {
     ? `<div class="panel-photo"><img src="${art.photo}" alt="${art.title}" /></div>`
     : `<div class="panel-photo-placeholder">No photo yet</div>`;
 
-  const igLink = art.artist_ig
-    ? `<a href="https://instagram.com/${art.artist_ig}" target="_blank">@${art.artist_ig}</a>`
-    : '';
-
   const foundBadge = isCompleted(art.id)
     ? `<span class="panel-found-badge">FOUND ✓</span>`
     : '';
@@ -106,7 +103,6 @@ function openPanel(art) {
       <div class="panel-title">${art.title}</div>
       <div class="panel-artist">
         <strong>${art.artist !== 'Unknown' ? art.artist : 'Unknown artist'}</strong>
-        ${igLink ? ' · ' + igLink : ''}
       </div>
       <div class="panel-address">${art.address}</div>
     </div>
@@ -309,12 +305,74 @@ function initFilters() {
   });
 }
 
+// ─── User location ────────────────────────────────
+
+function initLocation() {
+  const btn = document.getElementById('locate-btn');
+  if (!btn) return;
+
+  if (!navigator.geolocation) {
+    btn.style.display = 'none';
+    return;
+  }
+
+  btn.addEventListener('click', () => {
+    if (userMarker) {
+      map.flyTo(userMarker.getLatLng(), 17, { duration: 1 });
+      return;
+    }
+
+    btn.classList.add('locating');
+
+    navigator.geolocation.watchPosition(
+      pos => {
+        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+
+        if (!userMarker) {
+          userMarker = L.marker([lat, lng], {
+            icon: L.divIcon({
+              html: '<div class="user-dot"></div>',
+              className: '',
+              iconSize: [18, 18],
+              iconAnchor: [9, 9]
+            }),
+            zIndexOffset: 9999,
+            interactive: false
+          }).addTo(map);
+
+          userCircle = L.circle([lat, lng], {
+            radius: accuracy,
+            color: '#4285f4',
+            fillColor: '#4285f4',
+            fillOpacity: 0.1,
+            weight: 1,
+            interactive: false
+          }).addTo(map);
+
+          map.flyTo([lat, lng], 17, { duration: 1.5 });
+          btn.classList.remove('locating');
+          btn.classList.add('active');
+        } else {
+          userMarker.setLatLng([lat, lng]);
+          userCircle.setLatLng([lat, lng]);
+          userCircle.setRadius(accuracy);
+        }
+      },
+      () => {
+        btn.classList.remove('locating');
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 12000 }
+    );
+  });
+}
+
 // ─── Init ─────────────────────────────────────────
 
 allArtworks = ARTWORKS;
 initFilters();
 renderMarkers();
 updateNavScore();
+initLocation();
 
 document.getElementById('close-panel').addEventListener('click', closePanel);
 document.getElementById('open-quests').addEventListener('click', openQuestPanel);
