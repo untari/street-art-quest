@@ -12,7 +12,7 @@
 <body>
 
   <header>
-    <div class="logo">STREET ART <span>QUEST</span></div>
+    <a href="index.html" class="logo">STREET ART <span>QUEST</span></a>
     <div class="filters">
       <button class="filter-btn active" data-type="all">All</button>
       <button class="filter-btn" data-type="Mural">Mural</button>
@@ -21,11 +21,19 @@
       <button class="filter-btn" data-type="Sticker">Sticker</button>
       <button class="filter-btn" data-type="Installation">Installation</button>
     </div>
-    <button class="quest-nav-btn" id="open-quests">QUESTS <span id="quest-nav-score">0/5</span></button>
+    <button class="quest-nav-btn" id="open-quests">QUESTS <span id="quest-nav-score">0/20</span></button>
     <a href="submit.html" class="add-btn">+ Add Art</a>
   </header>
 
   <div id="map"></div>
+
+  <button id="locate-btn" class="locate-btn" title="Find my location" aria-label="Find my location">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+      <circle cx="12" cy="12" r="7" stroke-opacity="0.35"/>
+    </svg>
+  </button>
 
   <div id="panel" class="panel">
     <button id="close-panel" class="panel-close">×</button>
