@@ -366,6 +366,31 @@ function initLocation() {
   });
 }
 
+// ─── Welcome modal ────────────────────────────────
+
+function initWelcome() {
+  const WELCOME_KEY = 'saq_welcomed';
+  const backdrop = document.getElementById('welcome-backdrop');
+  const startBtn = document.getElementById('welcome-start');
+  const questBtn = document.getElementById('open-quests');
+
+  if (localStorage.getItem(WELCOME_KEY)) {
+    backdrop.classList.add('hidden');
+    return;
+  }
+
+  questBtn.classList.add('pulsing');
+
+  startBtn.addEventListener('click', () => {
+    backdrop.classList.add('hidden');
+    localStorage.setItem(WELCOME_KEY, '1');
+  });
+
+  questBtn.addEventListener('click', () => {
+    questBtn.classList.remove('pulsing');
+  }, { once: true });
+}
+
 // ─── Init ─────────────────────────────────────────
 
 allArtworks = ARTWORKS;
@@ -373,6 +398,7 @@ initFilters();
 renderMarkers();
 updateNavScore();
 initLocation();
+initWelcome();
 
 document.getElementById('close-panel').addEventListener('click', closePanel);
 document.getElementById('open-quests').addEventListener('click', openQuestPanel);

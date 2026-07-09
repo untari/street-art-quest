@@ -690,6 +690,121 @@ header {
   border-radius: 8px 0 0 0 !important;
 }
 
+/* ─── WELCOME MODAL ─────────────────────────── */
+.welcome-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.welcome-backdrop.hidden { display: none; }
+
+.welcome-card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  text-align: center;
+}
+
+.welcome-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px;
+  letter-spacing: 0.08em;
+  color: var(--dark);
+  margin-bottom: 4px;
+}
+
+.welcome-logo span { color: var(--teal); }
+
+.welcome-city {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 26px;
+}
+
+.welcome-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 26px;
+  text-align: left;
+}
+
+.welcome-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.welcome-step-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.welcome-step-text {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.welcome-step-text strong {
+  display: block;
+  color: var(--dark);
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.welcome-start {
+  width: 100%;
+  padding: 14px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  box-shadow: 0 4px 16px rgba(46,196,182,0.4);
+  margin-bottom: 14px;
+}
+
+.welcome-start:hover { opacity: 0.9; transform: scale(1.02); }
+
+.welcome-hint {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.welcome-hint strong { color: var(--dark); }
+
+/* ─── QUEST BUTTON PULSE ─────────────────────── */
+@keyframes quest-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(46,196,182,0.8); }
+  70%  { box-shadow: 0 0 0 10px rgba(46,196,182,0); }
+  100% { box-shadow: 0 0 0 0 rgba(46,196,182,0); }
+}
+
+.quest-nav-btn.pulsing {
+  animation: quest-pulse 1.8s ease-out infinite;
+}
+
 /* ─── RESPONSIVE ─────────────────────────────── */
 @media (max-width: 600px) {
   :root {
