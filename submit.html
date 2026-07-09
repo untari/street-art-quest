@@ -49,6 +49,93 @@
 
     .back-link:hover { color: var(--dark); }
 
+    /* ── how it works strip ── */
+    .how-it-works {
+      display: flex;
+      gap: 0;
+      margin-bottom: 32px;
+      max-width: 620px;
+    }
+
+    .how-step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .how-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 20px;
+      right: -1px;
+      width: 50%;
+      height: 2px;
+      background: var(--border);
+    }
+
+    .how-step:not(:first-child)::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: -1px;
+      width: 50%;
+      height: 2px;
+      background: var(--border);
+    }
+
+    .how-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--teal);
+      color: #fff;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .how-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--dark);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .how-desc {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    /* ── what happens next ── */
+    .next-steps {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      max-width: 620px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    .next-steps-icon { font-size: 20px; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+
+    .next-steps-text { font-size: 13px; color: var(--muted); line-height: 1.6; font-weight: 600; }
+
+    .next-steps-text strong { color: var(--dark); }
+
     .tally-wrap {
       background: var(--surface);
       border-radius: 12px;
@@ -110,7 +197,32 @@
   <div class="submit-page">
     <a href="index.html" class="back-link">← Back to map</a>
     <h1>Add an artwork</h1>
-    <p class="sub">Spotted something? Take a photo, drop a pin, and submit. It'll be reviewed before it appears on the map.</p>
+    <p class="sub">Spotted something new? Submit it here — it'll be reviewed and added to the map.</p>
+
+    <div class="how-it-works">
+      <div class="how-step">
+        <div class="how-icon">📷</div>
+        <div class="how-label">Photo</div>
+        <div class="how-desc">Take a shot or upload one</div>
+      </div>
+      <div class="how-step">
+        <div class="how-icon">📍</div>
+        <div class="how-label">Location</div>
+        <div class="how-desc">GPS picks it up automatically</div>
+      </div>
+      <div class="how-step">
+        <div class="how-icon">✅</div>
+        <div class="how-label">Review</div>
+        <div class="how-desc">We check it before it goes live</div>
+      </div>
+    </div>
+
+    <div class="next-steps">
+      <div class="next-steps-icon">💡</div>
+      <div class="next-steps-text">
+        <strong>What happens next?</strong> Once you submit, we review the artwork and add it to the map — usually within a few days. No account needed, and you'll see it appear when you next visit.
+      </div>
+    </div>
 
     <div class="tally-wrap" id="tally-wrap"></div>
   </div>
