@@ -22,6 +22,7 @@
   --muted: #888;
   --border: #e0e0e0;
   --panel-width: 360px;
+  --header-height: 62px;
 }
 
 body {
@@ -37,13 +38,14 @@ header {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 1000;
-  height: 62px;
+  height: var(--header-height);
   background: var(--header-bg);
   box-shadow: 0 2px 12px rgba(0,0,0,0.08);
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   padding: 0 20px;
-  gap: 12px;
+  gap: 8px;
 }
 
 .logo {
@@ -148,7 +150,7 @@ header {
 /* ─── MAP ─────────────────────────────────── */
 #map {
   position: fixed;
-  top: 62px; left: 0; right: 0; bottom: 0;
+  top: var(--header-height); left: 0; right: 0; bottom: 0;
   z-index: 1;
 }
 
@@ -179,7 +181,7 @@ header {
 /* ─── ARTWORK PANEL ───────────────────────────────── */
 .panel {
   position: fixed;
-  top: 62px; right: -100%;
+  top: var(--header-height); right: -100%;
   width: var(--panel-width);
   bottom: 0;
   background: var(--surface);
@@ -319,7 +321,7 @@ header {
 /* ─── QUEST PANEL (left) ─────────────────────────── */
 .quest-panel {
   position: fixed;
-  top: 62px; left: -340px;
+  top: var(--header-height); left: -340px;
   width: 320px;
   bottom: 0;
   background: var(--surface);
@@ -690,9 +692,52 @@ header {
 
 /* ─── RESPONSIVE ─────────────────────────────── */
 @media (max-width: 600px) {
-  :root { --panel-width: 100vw; }
-  header { padding: 0 12px; gap: 8px; }
-  .logo { font-size: 16px; }
+  :root {
+    --panel-width: 100vw;
+    --header-height: 96px;
+  }
+
+  header {
+    height: var(--header-height);
+    padding: 0 12px;
+    gap: 6px;
+    align-items: center;
+  }
+
+  /* Row 1: logo + action buttons */
+  .logo {
+    font-size: 16px;
+    order: 1;
+    flex: 1;
+  }
+
+  .quest-nav-btn {
+    order: 2;
+    flex-shrink: 0;
+  }
+
+  .add-btn {
+    order: 2;
+    flex-shrink: 0;
+  }
+
+  /* Row 2: filters full-width */
+  .filters {
+    order: 3;
+    width: 100%;
+    flex-basis: 100%;
+    padding-bottom: 8px;
+    gap: 6px;
+    mask-image: linear-gradient(to right, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  }
+
+  .filter-btn {
+    padding: 5px 12px;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
   .quest-panel { width: 100vw; left: -100vw; }
   .quest-card { width: calc(100vw - 32px); }
 }
