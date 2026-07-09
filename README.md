@@ -41,16 +41,15 @@ Users submit new finds through the **+ Add Art** form. Each submission is review
 
 ## Submission form
 
-The form (`submit.html`) collects:
-- Title and artist name
-- Artist Instagram handle
-- Type of artwork
-- Street address
-- Google Maps link (for exact coordinates)
-- Photo URL
-- Whether it's commissioned or unsanctioned
+Tap **+ Add Art** to open the submission form. No account needed — just fill it in and submit.
 
-Submissions go to the repo owner via GitHub Issues for review.
+The form collects:
+- Photo (upload from camera roll or take one on the spot)
+- Art name and artist (artist is optional)
+- Location (GPS-detected automatically)
+- Type of artwork (Mural, Paste-up, Sticker, Sculpture, Installation)
+
+Submissions are reviewed before they appear on the map, no login required, works on any device.
 
 ---
 
