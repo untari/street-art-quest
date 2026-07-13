@@ -7,7 +7,7 @@
   <meta name="description" content="Hunt down street art and murals hidden across Sheung Wan, Hong Kong." />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=2" />
 </head>
 <body>
 
@@ -58,6 +58,15 @@
 
   <div class="count-bar">
     <span id="count">Loading…</span>
+  </div>
+
+  <div id="mascot" class="mascot">
+    <button class="mascot-dismiss" id="mascot-dismiss" aria-label="Dismiss">×</button>
+    <div class="mascot-character">🧑‍🎨</div>
+    <div class="mascot-bubble">
+      <strong>Welcome to Sheung Wan!</strong>
+      <span>20 artworks are hiding on these streets. Tap a dot to start exploring.</span>
+    </div>
   </div>
 
   <div id="welcome-backdrop" class="welcome-backdrop hidden">

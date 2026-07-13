@@ -366,6 +366,32 @@ function initLocation() {
   });
 }
 
+// ─── Mascot ───────────────────────────────────────
+
+function initMascot() {
+  const MASCOT_KEY = 'saq_mascot_dismissed';
+  const mascot = document.getElementById('mascot');
+  const dismiss = document.getElementById('mascot-dismiss');
+
+  if (localStorage.getItem(MASCOT_KEY)) {
+    mascot.classList.add('hidden');
+    return;
+  }
+
+  dismiss.addEventListener('click', () => {
+    mascot.classList.add('hidden');
+    localStorage.setItem(MASCOT_KEY, '1');
+  });
+
+  // Auto-dismiss after 10 seconds
+  setTimeout(() => {
+    if (!mascot.classList.contains('hidden')) {
+      mascot.classList.add('hidden');
+      localStorage.setItem(MASCOT_KEY, '1');
+    }
+  }, 10000);
+}
+
 // ─── Welcome modal ────────────────────────────────
 
 const WELCOME_KEY = 'saq_welcomed';
@@ -399,6 +425,7 @@ initFilters();
 renderMarkers();
 updateNavScore();
 initLocation();
+initMascot();
 initWelcome();
 
 document.getElementById('close-panel').addEventListener('click', closePanel);
