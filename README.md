@@ -44,12 +44,13 @@ Users submit new finds through the **+ Add Art** form. Each submission is review
 Tap **+ Add Art** to open the submission form. No account needed — just fill it in and submit.
 
 The form collects:
-- Photo (upload from camera roll or take one on the spot)
-- Art name and artist (artist is optional)
-- Location (GPS-detected automatically)
+- Photo (take one on the spot or upload from your camera roll)
+- Art name and artist (both optional)
 - Type of artwork (Mural, Paste-up, Sticker, Sculpture, Installation)
+- Location (GPS-detected automatically on submit)
+- Notes (optional — nearby landmark, condition, anything useful)
 
-Submissions are reviewed before they appear on the map, no login required, works on any device.
+Submissions are stored privately and reviewed before anything appears on the map.
 
 ---
 
@@ -57,6 +58,7 @@ Submissions are reviewed before they appear on the map, no login required, works
 
 - **[Leaflet](https://leafletjs.com/)** — open source map library
 - **[Carto Voyager](https://carto.com/basemaps/)** — map tiles, free with no API key
+- **[Supabase](https://supabase.com/)** — open source backend for storing submissions and photos
 - **Vanilla JS** — no frameworks or dependencies
 - **localStorage** — saves your found artworks in the browser
 - **Geolocation API** — powers the live location dot and GPS check-in
