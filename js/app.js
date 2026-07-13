@@ -368,27 +368,28 @@ function initLocation() {
 
 // ─── Welcome modal ────────────────────────────────
 
-function initWelcome() {
-  const WELCOME_KEY = 'saq_welcomed';
-  const backdrop = document.getElementById('welcome-backdrop');
-  const startBtn = document.getElementById('welcome-start');
-  const questBtn = document.getElementById('open-quests');
+const WELCOME_KEY = 'saq_welcomed';
 
-  if (localStorage.getItem(WELCOME_KEY)) {
-    backdrop.classList.add('hidden');
-    return;
+function initWelcome() {
+  const questBtn = document.getElementById('open-quests');
+  if (!localStorage.getItem(WELCOME_KEY)) {
+    questBtn.classList.add('pulsing');
   }
 
-  questBtn.classList.add('pulsing');
-
-  startBtn.addEventListener('click', () => {
-    backdrop.classList.add('hidden');
+  document.getElementById('welcome-start').addEventListener('click', () => {
+    document.getElementById('welcome-backdrop').classList.add('hidden');
     localStorage.setItem(WELCOME_KEY, '1');
+    openQuestPanel();
   });
+}
 
-  questBtn.addEventListener('click', () => {
-    questBtn.classList.remove('pulsing');
-  }, { once: true });
+function handleQuestsClick() {
+  if (!localStorage.getItem(WELCOME_KEY)) {
+    document.getElementById('open-quests').classList.remove('pulsing');
+    document.getElementById('welcome-backdrop').classList.remove('hidden');
+  } else {
+    openQuestPanel();
+  }
 }
 
 // ─── Init ─────────────────────────────────────────
@@ -401,7 +402,7 @@ initLocation();
 initWelcome();
 
 document.getElementById('close-panel').addEventListener('click', closePanel);
-document.getElementById('open-quests').addEventListener('click', openQuestPanel);
+document.getElementById('open-quests').addEventListener('click', handleQuestsClick);
 document.getElementById('close-quest-panel').addEventListener('click', closeQuestPanel);
 document.getElementById('close-quest-card').addEventListener('click', closeQuestCard);
 document.getElementById('quest-backdrop').addEventListener('click', closeQuestCard);
