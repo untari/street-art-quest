@@ -11,15 +11,9 @@
     body { overflow: auto; min-height: 100vh; }
 
     .submit-page {
-      max-width: 900px;
+      max-width: 620px;
       margin: 0 auto;
       padding: 80px 24px 60px;
-    }
-
-    .submit-page h1,
-    .submit-page p.sub,
-    .back-link {
-      max-width: 620px;
     }
 
     .submit-page h1 {
@@ -53,8 +47,7 @@
     .how-it-works {
       display: flex;
       gap: 0;
-      margin-bottom: 32px;
-      max-width: 620px;
+      margin-bottom: 28px;
     }
 
     .how-step {
@@ -69,124 +62,266 @@
     .how-step:not(:last-child)::after {
       content: '';
       position: absolute;
-      top: 20px;
-      right: -1px;
-      width: 50%;
-      height: 2px;
+      top: 20px; right: -1px;
+      width: 50%; height: 2px;
       background: var(--border);
     }
 
     .how-step:not(:first-child)::before {
       content: '';
       position: absolute;
-      top: 20px;
-      left: -1px;
-      width: 50%;
-      height: 2px;
+      top: 20px; left: -1px;
+      width: 50%; height: 2px;
       background: var(--border);
     }
 
     .how-icon {
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       border-radius: 50%;
       background: var(--teal);
       color: #fff;
       font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       margin-bottom: 8px;
-      position: relative;
-      z-index: 1;
+      position: relative; z-index: 1;
     }
 
     .how-label {
-      font-size: 11px;
-      font-weight: 800;
+      font-size: 11px; font-weight: 800;
       color: var(--dark);
       letter-spacing: 0.04em;
       text-transform: uppercase;
       margin-bottom: 2px;
     }
 
-    .how-desc {
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 600;
-      line-height: 1.4;
-    }
+    .how-desc { font-size: 11px; color: var(--muted); font-weight: 600; line-height: 1.4; }
 
-    /* ── what happens next ── */
-    .next-steps {
+    /* ── form card ── */
+    .form-card {
       background: var(--surface);
-      border-radius: 12px;
-      padding: 18px 20px;
-      margin-bottom: 12px;
-      max-width: 620px;
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    }
-
-    .next-steps-icon { font-size: 20px; flex-shrink: 0; line-height: 1; margin-top: 2px; }
-
-    .next-steps-text { font-size: 13px; color: var(--muted); line-height: 1.6; font-weight: 600; }
-
-    .next-steps-text strong { color: var(--dark); }
-
-    .tally-wrap {
-      background: var(--surface);
-      border-radius: 12px;
-      overflow: hidden;
+      border-radius: 16px;
+      padding: 28px 24px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
-    .tally-wrap iframe {
-      display: block;
-      width: 100%;
-      min-height: 800px;
-      border: none;
+    /* ── photo upload ── */
+    .photo-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 28px 16px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+      overflow: hidden;
     }
 
-    /* shown until TALLY_FORM_ID is set */
-    .setup-notice {
-      padding: 48px 28px;
-      text-align: center;
+    .photo-label:hover { border-color: var(--teal); background: rgba(46,196,182,0.04); }
+
+    .photo-label input[type="file"] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
     }
 
-    .setup-notice .icon { font-size: 40px; margin-bottom: 16px; }
+    .photo-label-icon { font-size: 32px; }
 
-    .setup-notice h2 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 26px;
-      letter-spacing: 0.06em;
-      margin-bottom: 12px;
-    }
-
-    .setup-notice ol {
-      text-align: left;
-      display: inline-block;
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 2;
-      margin-bottom: 16px;
-    }
-
-    .setup-notice code {
-      background: var(--bg);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 12px;
+    .photo-label-text {
+      font-size: 13px; font-weight: 800;
       color: var(--dark);
     }
 
-    .setup-notice p {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 12px;
+    .photo-label-sub { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+    .photo-preview {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      border-radius: 10px;
+      display: none;
     }
+
+    /* ── field group ── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    .field label {
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--dark);
+    }
+
+    .field label span { color: var(--muted); font-weight: 600; text-transform: none; letter-spacing: 0; }
+
+    .field input,
+    .field select,
+    .field textarea {
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--dark);
+      background: var(--bg);
+      transition: border-color 0.15s;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus { border-color: var(--teal); background: #fff; }
+
+    .field textarea { resize: vertical; min-height: 72px; }
+
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+
+    /* ── gps row ── */
+    .gps-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .gps-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .gps-dot.active { background: var(--teal); }
+    .gps-dot.error  { background: #e74c3c; }
+
+    /* ── submit button ── */
+    .submit-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s;
+      box-shadow: 0 4px 16px rgba(46,196,182,0.4);
+    }
+
+    .submit-btn:hover:not(:disabled) { opacity: 0.9; transform: scale(1.01); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .form-error {
+      font-size: 12px;
+      color: #e74c3c;
+      font-weight: 700;
+      text-align: center;
+      display: none;
+    }
+
+    /* ── thank you popup ── */
+    .ty-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .ty-backdrop.visible { display: flex; }
+
+    .ty-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 40px 28px 32px;
+      max-width: 320px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: ty-pop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    @keyframes ty-pop {
+      from { transform: scale(0.85); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+
+    .ty-emoji { font-size: 52px; display: block; margin-bottom: 16px; }
+
+    .ty-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      margin-bottom: 10px;
+      color: var(--dark);
+    }
+
+    .ty-title span { color: var(--teal); }
+
+    .ty-body {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-weight: 600;
+      margin-bottom: 28px;
+    }
+
+    .ty-btn-primary {
+      display: block;
+      background: var(--teal);
+      color: #fff;
+      padding: 13px;
+      border-radius: 12px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      box-shadow: 0 4px 16px rgba(46,196,182,0.4);
+      margin-bottom: 10px;
+      transition: opacity 0.15s;
+    }
+
+    .ty-btn-primary:hover { opacity: 0.9; }
+
+    .ty-btn-secondary {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: color 0.15s;
+      cursor: pointer;
+      background: none;
+      border: none;
+      width: 100%;
+      padding: 4px 0;
+    }
+
+    .ty-btn-secondary:hover { color: var(--dark); }
   </style>
 </head>
 <body>
@@ -217,60 +352,192 @@
       </div>
     </div>
 
-    <div class="next-steps">
-      <div class="next-steps-icon">💡</div>
-      <div class="next-steps-text">
-        <strong>What happens next?</strong> Once you submit, we review the artwork and add it to the map — usually within a few days. No account needed, and you'll see it appear when you next visit.
-      </div>
-    </div>
+    <form class="form-card" id="art-form" novalidate>
 
-    <div class="tally-wrap" id="tally-wrap"></div>
+      <!-- Photo -->
+      <div class="field">
+        <label>Photo <span>(optional but helpful)</span></label>
+        <label class="photo-label" id="photo-label">
+          <input type="file" id="photo" accept="image/*" capture="environment" />
+          <span class="photo-label-icon">📷</span>
+          <span class="photo-label-text">Take a photo or upload</span>
+          <span class="photo-label-sub">Camera · Gallery · Files</span>
+        </label>
+        <img class="photo-preview" id="photo-preview" alt="Preview" />
+      </div>
+
+      <!-- Art name -->
+      <div class="field">
+        <label>Art name <span>(optional)</span></label>
+        <input type="text" id="title" placeholder="e.g. Blue Elephant" />
+      </div>
+
+      <!-- Artist -->
+      <div class="field">
+        <label>Artist <span>(optional)</span></label>
+        <input type="text" id="artist" placeholder="e.g. Caratoes" />
+      </div>
+
+      <!-- Type -->
+      <div class="field">
+        <label>Type</label>
+        <select id="type" required>
+          <option value="" disabled selected>Select a type…</option>
+          <option value="Mural">Mural</option>
+          <option value="Paste-up">Paste-up</option>
+          <option value="Sticker">Sticker</option>
+          <option value="Sculpture">Sculpture</option>
+          <option value="Installation">Installation</option>
+        </select>
+      </div>
+
+      <!-- Notes -->
+      <div class="field">
+        <label>Notes <span>(optional)</span></label>
+        <textarea id="notes" placeholder="Anything useful — street name, nearby landmark, condition…"></textarea>
+      </div>
+
+      <!-- GPS status -->
+      <div class="gps-row">
+        <div class="gps-dot" id="gps-dot"></div>
+        <span id="gps-label">Location will be recorded on submit</span>
+      </div>
+
+      <div class="form-error" id="form-error"></div>
+
+      <button type="submit" class="submit-btn" id="submit-btn">Submit artwork</button>
+    </form>
   </div>
 
+  <!-- Thank you popup -->
+  <div class="ty-backdrop" id="ty-backdrop">
+    <div class="ty-card">
+      <span class="ty-emoji">🎉</span>
+      <div class="ty-title">Nice <span>find!</span></div>
+      <p class="ty-body">Your submission is in. We'll review it and add it to the map — usually within a few days.</p>
+      <a href="index.html" class="ty-btn-primary">Back to the map →</a>
+      <button class="ty-btn-secondary" id="ty-another">Submit another artwork</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
-    // ─── SETUP ────────────────────────────────────────────────────────────────
-    // 1. Go to https://tally.so and create a free account
-    // 2. Build your form (photo upload, art name, artist, location, label)
-    // 3. Click Share → Embed → copy the form ID from the embed code
-    //    It looks like: <iframe src="https://tally.so/embed/XXXXXX" ...>
-    // 4. Paste just the ID (e.g. "wMdKLz") below:
-    const TALLY_FORM_ID = 'LZy4q2';
+    const { createClient } = supabase;
+    const db = createClient(
+      'https://czzligpufmcnddkqcigb.supabase.co',
+      'sb_publishable_ifaWFhawHfsqym4QZdSTpg_wNExkoqv'
+    );
 
-    const wrap = document.getElementById('tally-wrap');
+    // ── Photo preview ──────────────────────────────
+    const photoInput = document.getElementById('photo');
+    const photoPreview = document.getElementById('photo-preview');
+    const photoLabel = document.getElementById('photo-label');
 
-    if (TALLY_FORM_ID) {
-      wrap.innerHTML = `
-        <iframe
-          id="tally-iframe"
-          src="https://tally.so/embed/${TALLY_FORM_ID}?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
-          loading="lazy"
-          width="100%"
-          height="800"
-          title="Submit an artwork"
-          frameborder="0"
-          marginheight="0"
-          marginwidth="0"
-        ></iframe>
-      `;
-      // Tally's script auto-resizes the iframe via dynamicHeight
-      const s = document.createElement('script');
-      s.src = 'https://tally.so/widgets/embed.js';
-      document.body.appendChild(s);
-    } else {
-      wrap.innerHTML = `
-        <div class="setup-notice">
-          <div class="icon">🗺️</div>
-          <h2>One-time setup needed</h2>
-          <ol>
-            <li>Go to <strong>tally.so</strong> and create a free account</li>
-            <li>Build your form — photo, art name, artist, location, label</li>
-            <li>Click <strong>Share → Embed</strong> and copy the form ID</li>
-            <li>Paste the ID into <code>TALLY_FORM_ID</code> in <code>submit.html</code></li>
-          </ol>
-          <p>Free forever · No account needed to submit · File uploads included</p>
-        </div>
-      `;
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      photoPreview.src = url;
+      photoPreview.style.display = 'block';
+      photoLabel.style.display = 'none';
+    });
+
+    // ── GPS ────────────────────────────────────────
+    let gpsCoords = null;
+    const gpsDot = document.getElementById('gps-dot');
+    const gpsLabel = document.getElementById('gps-label');
+
+    function getLocation() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) { reject('no-gps'); return; }
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true, timeout: 12000
+        });
+      });
     }
+
+    // ── Form submit ────────────────────────────────
+    const form = document.getElementById('art-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const formError = document.getElementById('form-error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formError.style.display = 'none';
+
+      const type = document.getElementById('type').value;
+      if (!type) {
+        formError.textContent = 'Please select an artwork type.';
+        formError.style.display = 'block';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Getting location…';
+
+      // 1. GPS
+      try {
+        gpsDot.className = 'gps-dot';
+        gpsLabel.textContent = 'Getting your location…';
+        const pos = await getLocation();
+        gpsCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        gpsDot.classList.add('active');
+        gpsLabel.textContent = `Location captured (±${Math.round(pos.coords.accuracy)}m)`;
+      } catch {
+        gpsDot.classList.add('error');
+        gpsLabel.textContent = 'Could not get location — submitting without it';
+      }
+
+      // 2. Upload photo
+      submitBtn.textContent = 'Uploading photo…';
+      let photo_url = null;
+      const file = photoInput.files[0];
+      if (file) {
+        const ext = file.name.split('.').pop() || 'jpg';
+        const filename = `${Date.now()}.${ext}`;
+        const { error: uploadError } = await db.storage.from('photos').upload(filename, file);
+        if (!uploadError) {
+          const { data: urlData } = db.storage.from('photos').getPublicUrl(filename);
+          photo_url = urlData.publicUrl;
+        }
+      }
+
+      // 3. Insert submission
+      submitBtn.textContent = 'Submitting…';
+      const { error } = await db.from('submissions').insert({
+        title: document.getElementById('title').value.trim() || null,
+        artist: document.getElementById('artist').value.trim() || null,
+        type,
+        lat: gpsCoords?.lat ?? null,
+        lng: gpsCoords?.lng ?? null,
+        photo_url,
+        notes: document.getElementById('notes').value.trim() || null
+      });
+
+      if (error) {
+        formError.textContent = 'Something went wrong. Please try again.';
+        formError.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit artwork';
+        return;
+      }
+
+      document.getElementById('ty-backdrop').classList.add('visible');
+    });
+
+    // ── Submit another ─────────────────────────────
+    document.getElementById('ty-another').addEventListener('click', () => {
+      document.getElementById('ty-backdrop').classList.remove('visible');
+      form.reset();
+      photoPreview.style.display = 'none';
+      photoLabel.style.display = 'flex';
+      gpsDot.className = 'gps-dot';
+      gpsLabel.textContent = 'Location will be recorded on submit';
+      gpsCoords = null;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit artwork';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   </script>
 </body>
 </html>
