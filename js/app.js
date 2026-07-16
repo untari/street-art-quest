@@ -316,15 +316,19 @@ function initLocation() {
     return;
   }
 
+  let watchId = null;
+
   btn.addEventListener('click', () => {
     if (userMarker) {
       map.flyTo(userMarker.getLatLng(), 17, { duration: 1 });
       return;
     }
 
+    if (watchId !== null) return;
+
     btn.classList.add('locating');
 
-    navigator.geolocation.watchPosition(
+    watchId = navigator.geolocation.watchPosition(
       pos => {
         const { latitude: lat, longitude: lng, accuracy } = pos.coords;
 
