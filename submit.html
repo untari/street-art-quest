@@ -456,6 +456,27 @@
       });
     }
 
+    // ── Image compression ──────────────────────────
+    function compressImage(file, maxPx = 1200, quality = 0.8) {
+      return new Promise(resolve => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          let { width, height } = img;
+          if (width > maxPx || height > maxPx) {
+            if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+            else                { width = Math.round(width * maxPx / height);  height = maxPx; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+        };
+        img.src = url;
+      });
+    }
+
     // ── Form submit ────────────────────────────────
     const form = document.getElementById('art-form');
     const submitBtn = document.getElementById('submit-btn');
@@ -488,14 +509,14 @@
         gpsLabel.textContent = 'Could not get location — submitting without it';
       }
 
-      // 2. Upload photo
+      // 2. Upload photo (compressed)
       submitBtn.textContent = 'Uploading photo…';
       let photo_url = null;
       const file = photoInput.files[0];
       if (file) {
-        const ext = file.name.split('.').pop() || 'jpg';
-        const filename = `${Date.now()}.${ext}`;
-        const { error: uploadError } = await db.storage.from('photos').upload(filename, file);
+        const compressed = await compressImage(file);
+        const filename = `${Date.now()}.jpg`;
+        const { error: uploadError } = await db.storage.from('photos').upload(filename, compressed, { contentType: 'image/jpeg' });
         if (!uploadError) {
           const { data: urlData } = db.storage.from('photos').getPublicUrl(filename);
           photo_url = urlData.publicUrl;
