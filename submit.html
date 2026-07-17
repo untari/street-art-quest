@@ -4,409 +4,475 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Add Art — Street Art Quest</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/style.css" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
 
-    body { overflow: auto; min-height: 100vh; }
+    *, *::before, *::after { box-sizing: border-box; }
 
-    .submit-page {
-      max-width: 620px;
-      margin: 0 auto;
-      padding: 80px 24px 60px;
+    body { overflow: hidden; height: 100vh; background: var(--bg); }
+
+    /* ── top bar ── */
+    .submit-header {
+      position: fixed; top: 0; left: 0; right: 0; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; background: var(--bg); z-index: 100;
+      border-bottom: 1px solid var(--border);
     }
-
-    .submit-page h1 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 52px;
-      letter-spacing: 0.08em;
-      line-height: 1;
-      margin-bottom: 6px;
+    .submit-header .logo {
+      font-family: 'Bebas Neue', sans-serif; font-size: 18px;
+      letter-spacing: 0.12em; color: var(--dark); text-decoration: none;
     }
-
-    .submit-page p.sub {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-      margin-bottom: 28px;
-    }
-
+    .submit-header .logo span { color: var(--teal); }
     .back-link {
-      display: inline-block;
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      margin-bottom: 32px;
-      transition: color 0.15s;
+      font-size: 12px; font-weight: 800; color: var(--muted);
+      text-decoration: none; letter-spacing: 0.06em; transition: color 0.15s;
     }
-
     .back-link:hover { color: var(--dark); }
 
-    /* ── how it works strip ── */
-    .how-it-works {
-      display: flex;
-      gap: 0;
-      margin-bottom: 28px;
+    /* ── progress bar ── */
+    .progress-bar {
+      position: fixed; top: 56px; left: 0; right: 0;
+      height: 3px; background: var(--border); z-index: 100;
+    }
+    .progress-fill {
+      height: 100%; background: var(--teal);
+      border-radius: 0 2px 2px 0;
+      transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
     }
 
-    .how-step {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      position: relative;
-    }
-
-    .how-step:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      top: 20px; right: -1px;
-      width: 50%; height: 2px;
-      background: var(--border);
-    }
-
-    .how-step:not(:first-child)::before {
-      content: '';
-      position: absolute;
-      top: 20px; left: -1px;
-      width: 50%; height: 2px;
-      background: var(--border);
-    }
-
-    .how-icon {
-      width: 40px; height: 40px;
-      border-radius: 50%;
-      background: var(--teal);
-      color: #fff;
-      font-size: 18px;
+    /* ── stage ── */
+    .stage {
+      position: fixed; inset: 0; top: 59px;
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: 8px;
-      position: relative; z-index: 1;
+      overflow: hidden; padding: 20px;
     }
 
-    .how-label {
-      font-size: 11px; font-weight: 800;
-      color: var(--dark);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      margin-bottom: 2px;
+    /* ── step panels ── */
+    .step-panel {
+      position: absolute; width: 100%; max-width: 460px;
+      max-height: calc(100vh - 100px); overflow-y: auto;
+      padding: 4px; display: none; flex-direction: column;
+    }
+    .step-panel.active     { display: flex; animation: enter-fwd  0.32s cubic-bezier(0.34,1.1,0.64,1) both; }
+    .step-panel.enter-back { display: flex; animation: enter-back 0.32s cubic-bezier(0.34,1.1,0.64,1) both; }
+
+    @keyframes enter-fwd  { from { opacity:0; transform:translateY(28px) scale(0.97); } to { opacity:1; transform:none; } }
+    @keyframes enter-back { from { opacity:0; transform:translateY(-28px) scale(0.97); } to { opacity:1; transform:none; } }
+
+    .step-tag {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--teal); margin-bottom: 10px;
+    }
+    .step-heading {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(36px, 8vw, 50px);
+      letter-spacing: 0.05em; line-height: 1.05;
+      color: var(--dark); margin-bottom: 6px;
+    }
+    .step-sub {
+      font-size: 13px; color: var(--muted); font-weight: 600;
+      line-height: 1.6; margin-bottom: 20px;
     }
 
-    .how-desc { font-size: 11px; color: var(--muted); font-weight: 600; line-height: 1.4; }
-
-    /* ── form card ── */
-    .form-card {
-      background: var(--surface);
-      border-radius: 16px;
-      padding: 28px 24px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
+    /* ── photo ── */
+    .photo-drop {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 10px; border: 2px dashed var(--border);
+      border-radius: 20px; padding: 36px 20px; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      position: relative; overflow: hidden; text-align: center; margin-bottom: 14px;
     }
-
-    /* ── photo upload ── */
-    .photo-label {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border: 2px dashed var(--border);
-      border-radius: 12px;
-      padding: 28px 16px;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .photo-label:hover { border-color: var(--teal); background: rgba(46,196,182,0.04); }
-
-    .photo-label input[type="file"] {
-      position: absolute; inset: 0;
-      opacity: 0; cursor: pointer;
-      width: 100%; height: 100%;
-    }
-
-    .photo-label-icon { font-size: 32px; }
-
-    .photo-label-text {
-      font-size: 13px; font-weight: 800;
-      color: var(--dark);
-    }
-
-    .photo-label-sub { font-size: 11px; color: var(--muted); font-weight: 600; }
+    .photo-drop:hover { border-color: var(--teal); background: rgba(46,196,182,0.05); transform: scale(1.01); }
+    .photo-drop:active { transform: scale(0.99); }
+    .photo-drop input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .photo-drop-icon  { font-size: 44px; line-height: 1; }
+    .photo-drop-title { font-size: 15px; font-weight: 800; color: var(--dark); margin-top: 4px; }
+    .photo-drop-sub   { font-size: 12px; color: var(--muted); font-weight: 600; }
 
     .photo-preview {
-      width: 100%;
-      aspect-ratio: 16/9;
-      object-fit: cover;
-      border-radius: 10px;
-      display: none;
+      width: 100%; aspect-ratio: 4/3; object-fit: cover;
+      border-radius: 18px; display: none; margin-bottom: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
     }
-
-    /* ── field group ── */
-    .field { display: flex; flex-direction: column; gap: 6px; }
-
-    .field label {
-      font-size: 11px; font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--dark);
+    .photo-retake {
+      display: none; width: 100%; align-items: center; justify-content: center; gap: 8px;
+      padding: 11px; border: 1.5px solid var(--border); border-radius: 12px;
+      font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800;
+      color: var(--muted); background: none; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s; margin-bottom: 14px;
     }
+    .photo-retake:hover { color: var(--dark); border-color: var(--dark); }
 
-    .field label span { color: var(--muted); font-weight: 600; text-transform: none; letter-spacing: 0; }
+    /* ── location step ── */
+    .loc-gps-btn {
+      width: 100%; padding: 17px 20px; background: var(--teal); color: #fff;
+      border: none; border-radius: 16px; font-family: 'Nunito', sans-serif;
+      font-size: 15px; font-weight: 800; cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 6px 20px rgba(46,196,182,0.4);
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-bottom: 14px;
+    }
+    .loc-gps-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+    .loc-gps-btn:active { transform: scale(0.98); }
+    .loc-gps-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; }
 
-    .field input,
-    .field select,
-    .field textarea {
-      padding: 11px 14px;
+    .loc-result {
+      display: none; align-items: center; gap: 10px;
+      padding: 12px 14px; background: rgba(46,196,182,0.1);
+      border: 1.5px solid var(--teal); border-radius: 14px; margin-bottom: 12px;
+    }
+    .loc-result.visible { display: flex; }
+    .loc-result-text { font-size: 13px; font-weight: 800; color: var(--dark); line-height: 1.4; }
+    .loc-result-text small { display: block; font-weight: 600; color: var(--muted); font-size: 11px; margin-top: 1px; }
+
+    .loc-open-maps {
+      display: none; width: 100%; padding: 11px; background: none;
+      border: 1.5px solid var(--border); border-radius: 12px;
+      font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800;
+      color: var(--dark); cursor: pointer; text-decoration: none; text-align: center;
+      transition: border-color 0.15s, background 0.15s; margin-bottom: 12px;
+    }
+    .loc-open-maps:hover { border-color: var(--teal); background: rgba(46,196,182,0.05); }
+    .loc-open-maps.visible { display: block; }
+
+    .loc-divider {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 11px; font-weight: 800; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;
+    }
+    .loc-divider::before, .loc-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .loc-map-wrap { position: relative; margin-bottom: 8px; }
+    #loc-map { width: 100%; height: 210px; border-radius: 16px; overflow: hidden; border: 1.5px solid var(--border); }
+    .loc-map-hint {
+      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.62); color: #fff;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      padding: 5px 12px; border-radius: 20px; pointer-events: none;
+      white-space: nowrap; transition: opacity 0.3s;
+    }
+    .loc-map-hint.hidden { opacity: 0; }
+    .loc-map-sub { font-size: 11px; color: var(--muted); font-weight: 600; text-align: center; margin-bottom: 14px; }
+
+    /* ── details form card ── */
+    .detail-card {
+      background: #fff;
       border: 1.5px solid var(--border);
-      border-radius: 10px;
-      font-family: 'Nunito', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--dark);
-      background: var(--bg);
-      transition: border-color 0.15s;
-      outline: none;
-      appearance: none;
-      -webkit-appearance: none;
-    }
-
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus { border-color: var(--teal); background: #fff; }
-
-    .field textarea { resize: vertical; min-height: 72px; }
-
-    .field select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 14px center;
-      padding-right: 36px;
-    }
-
-    /* ── gps row ── */
-    .gps-row {
+      border-radius: 20px;
+      padding: 20px;
       display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 700;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      margin-bottom: 20px;
     }
 
-    .gps-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: var(--border);
-      flex-shrink: 0;
+    .detail-field { display: flex; flex-direction: column; gap: 5px; }
+
+    .detail-label {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--dark);
+    }
+    .optional-tag {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 6px; padding: 1px 6px;
+      text-transform: none; letter-spacing: 0;
     }
 
-    .gps-dot.active { background: var(--teal); }
-    .gps-dot.error  { background: #e74c3c; }
-
-    /* ── submit button ── */
-    .submit-btn {
-      width: 100%;
-      padding: 15px;
-      background: var(--teal);
-      color: #fff;
-      border: none;
-      border-radius: 12px;
+    .detail-input,
+    .detail-select,
+    .detail-textarea {
+      padding: 11px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 11px;
       font-family: 'Nunito', sans-serif;
-      font-size: 15px;
-      font-weight: 800;
+      font-size: 14px; font-weight: 600;
+      color: var(--dark); background: var(--bg);
+      outline: none; transition: border-color 0.15s, background 0.15s;
+      appearance: none; -webkit-appearance: none;
+    }
+    .detail-input:focus,
+    .detail-select:focus,
+    .detail-textarea:focus { border-color: var(--teal); background: #fff; }
+    .detail-input::placeholder,
+    .detail-textarea::placeholder { color: #ccc; }
+    .detail-textarea { resize: none; height: 80px; }
+
+    /* ── tag input ── */
+    .tag-input-wrap {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 8px 10px; min-height: 46px;
+      border: 1.5px solid var(--border); border-radius: 11px;
+      background: var(--bg); cursor: text;
+      transition: border-color 0.15s, background 0.15s;
+      align-items: center;
+    }
+    .tag-input-wrap:focus-within { border-color: var(--teal); background: #fff; }
+
+    .tag-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--teal); color: #fff;
+      border-radius: 20px; padding: 4px 10px;
+      font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 800;
+      animation: chip-in 0.18s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes chip-in { from { opacity:0; transform:scale(0.7); } to { opacity:1; transform:scale(1); } }
+    .tag-chip-remove {
+      cursor: pointer; font-size: 15px; line-height: 1;
+      opacity: 0.75; transition: opacity 0.15s;
+    }
+    .tag-chip-remove:hover { opacity: 1; }
+
+    .tag-text-input {
+      border: none; outline: none; background: transparent;
+      font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 600;
+      color: var(--dark); flex: 1; min-width: 100px;
+    }
+    .tag-text-input::placeholder { color: #ccc; }
+
+    .tag-hint {
+      font-size: 11px; color: var(--muted); font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .detail-select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 13px center; padding-right: 34px;
+    }
+    .detail-select option[value=""] { color: #aaa; }
+
+    /* ── summary ── */
+    .summary-card {
+      background: #fff; border: 1.5px solid var(--border); border-radius: 18px;
+      padding: 18px; display: flex; flex-direction: column; gap: 12px;
+      margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .summary-row { display: flex; align-items: center; gap: 12px; }
+    .summary-key { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); min-width: 60px; }
+    .summary-val { font-size: 13px; font-weight: 700; color: var(--dark); }
+    .summary-val.empty { color: var(--muted); font-style: italic; font-weight: 600; }
+    .summary-photo-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 10px; display: none; }
+
+    /* ── action buttons ── */
+    .step-actions { display: flex; flex-direction: column; gap: 10px; }
+    .btn-row { display: flex; gap: 10px; }
+
+    .btn-next {
+      width: 100%; padding: 16px; background: var(--teal); color: #fff;
+      border: none; border-radius: 14px; font-family: 'Nunito', sans-serif;
+      font-size: 16px; font-weight: 800; letter-spacing: 0.04em; cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 6px 20px rgba(46,196,182,0.4);
+    }
+    .btn-next:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(46,196,182,0.45); }
+    .btn-next:active:not(:disabled) { transform: scale(0.98); }
+    .btn-next:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+    .btn-back {
+      flex: 0 0 auto; padding: 14px 22px; background: var(--surface);
+      border: 2px solid var(--border); border-radius: 14px;
+      font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 800;
+      color: var(--dark); cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+    .btn-back:hover { background: #fff; border-color: var(--dark); transform: translateX(-2px); }
+    .btn-back:active { transform: scale(0.97); }
+
+    .skip-btn {
+      background: none; border: none; font-family: 'Nunito', sans-serif;
+      font-size: 12px; font-weight: 800; color: var(--muted); cursor: pointer;
+      padding: 6px 0; text-align: center; transition: color 0.15s; width: 100%;
       letter-spacing: 0.04em;
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.15s;
-      box-shadow: 0 4px 16px rgba(46,196,182,0.4);
     }
+    .skip-btn:hover { color: var(--dark); }
 
-    .submit-btn:hover:not(:disabled) { opacity: 0.9; transform: scale(1.01); }
-    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .form-error {
-      font-size: 12px;
-      color: #e74c3c;
-      font-weight: 700;
-      text-align: center;
-      display: none;
-    }
+    .form-error { font-size: 12px; color: #e74c3c; font-weight: 700; display: none; margin-bottom: 10px; text-align: center; }
 
     /* ── thank you popup ── */
-    .ty-backdrop {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 2000;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
+    .ty-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 2000; align-items: center; justify-content: center; padding: 24px; }
     .ty-backdrop.visible { display: flex; }
-
-    .ty-card {
-      background: #fff;
-      border-radius: 20px;
-      padding: 40px 28px 32px;
-      max-width: 320px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      animation: ty-pop 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    }
-
-    @keyframes ty-pop {
-      from { transform: scale(0.85); opacity: 0; }
-      to   { transform: scale(1);    opacity: 1; }
-    }
-
-    .ty-emoji { font-size: 52px; display: block; margin-bottom: 16px; }
-
-    .ty-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 42px;
-      letter-spacing: 0.06em;
-      line-height: 1;
-      margin-bottom: 10px;
-      color: var(--dark);
-    }
-
+    .ty-card { background: #fff; border-radius: 24px; padding: 44px 28px 36px; max-width: 320px; width: 100%; text-align: center; box-shadow: 0 24px 64px rgba(0,0,0,0.25); animation: ty-pop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes ty-pop { from { transform: scale(0.82) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .ty-emoji { font-size: 56px; display: block; margin-bottom: 18px; }
+    .ty-title { font-family: 'Bebas Neue', sans-serif; font-size: 46px; letter-spacing: 0.06em; line-height: 1; margin-bottom: 12px; color: var(--dark); }
     .ty-title span { color: var(--teal); }
-
-    .ty-body {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.7;
-      font-weight: 600;
-      margin-bottom: 28px;
-    }
-
-    .ty-btn-primary {
-      display: block;
-      background: var(--teal);
-      color: #fff;
-      padding: 13px;
-      border-radius: 12px;
-      font-family: 'Nunito', sans-serif;
-      font-size: 14px;
-      font-weight: 800;
-      text-decoration: none;
-      letter-spacing: 0.04em;
-      box-shadow: 0 4px 16px rgba(46,196,182,0.4);
-      margin-bottom: 10px;
-      transition: opacity 0.15s;
-    }
-
-    .ty-btn-primary:hover { opacity: 0.9; }
-
-    .ty-btn-secondary {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      text-decoration: none;
-      transition: color 0.15s;
-      cursor: pointer;
-      background: none;
-      border: none;
-      width: 100%;
-      padding: 4px 0;
-    }
-
+    .ty-body { font-size: 13px; color: var(--muted); line-height: 1.7; font-weight: 600; margin-bottom: 28px; }
+    .ty-btn-primary { display: block; background: var(--teal); color: #fff; padding: 14px; border-radius: 14px; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; text-decoration: none; letter-spacing: 0.04em; box-shadow: 0 4px 18px rgba(46,196,182,0.4); margin-bottom: 12px; transition: opacity 0.15s, transform 0.15s; }
+    .ty-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .ty-btn-secondary { display: block; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; background: none; border: none; width: 100%; padding: 4px 0; transition: color 0.15s; font-family: 'Nunito', sans-serif; }
     .ty-btn-secondary:hover { color: var(--dark); }
   </style>
 </head>
 <body>
-  <header>
+
+  <div class="submit-header">
     <a href="index.html" class="logo">STREET ART <span>QUEST</span></a>
-  </header>
+    <a href="index.html" class="back-link">← Map</a>
+  </div>
 
-  <div class="submit-page">
-    <a href="index.html" class="back-link">← Back to map</a>
-    <h1>Add an artwork</h1>
-    <p class="sub">Spotted something new? Submit it here — it'll be reviewed and added to the map.</p>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:25%"></div>
+  </div>
 
-    <div class="how-it-works">
-      <div class="how-step">
-        <div class="how-icon">📷</div>
-        <div class="how-label">Photo</div>
-        <div class="how-desc">Take a shot or upload one</div>
-      </div>
-      <div class="how-step">
-        <div class="how-icon">📍</div>
-        <div class="how-label">Location</div>
-        <div class="how-desc">GPS picks it up automatically</div>
-      </div>
-      <div class="how-step">
-        <div class="how-icon">✅</div>
-        <div class="how-label">Review</div>
-        <div class="how-desc">We check it before it goes live</div>
+  <div class="stage">
+
+    <!-- Step 1: Photo -->
+    <div class="step-panel active" id="step-1">
+      <div class="step-tag">Step 1 of 4</div>
+      <div class="step-heading">Got a photo?</div>
+      <p class="step-sub">Take one on the spot or pick from your gallery.</p>
+
+      <label class="photo-drop" id="photo-label">
+        <input type="file" id="photo" accept="image/*" capture="environment" />
+        <div class="photo-drop-icon">📷</div>
+        <div class="photo-drop-title">Take or upload a photo</div>
+        <div class="photo-drop-sub">Camera · Gallery · Files</div>
+      </label>
+      <img class="photo-preview" id="photo-preview" alt="Preview" />
+      <button class="photo-retake" id="photo-retake">↺ &nbsp;Change photo</button>
+
+      <div class="step-actions">
+        <button class="btn-next" id="step1-next">Next →</button>
+        <button class="skip-btn" onclick="goTo(2)">Skip — no photo</button>
       </div>
     </div>
 
-    <form class="form-card" id="art-form" novalidate>
+    <!-- Step 2: Location -->
+    <div class="step-panel" id="step-2">
+      <div class="step-tag">Step 2 of 4</div>
+      <div class="step-heading">Where is it?</div>
+      <p class="step-sub">Use GPS or tap the map to pin the exact spot.</p>
 
-      <!-- Photo -->
-      <div class="field">
-        <label>Photo <span>(optional but helpful)</span></label>
-        <label class="photo-label" id="photo-label">
-          <input type="file" id="photo" accept="image/*" capture="environment" />
-          <span class="photo-label-icon">📷</span>
-          <span class="photo-label-text">Take a photo or upload</span>
-          <span class="photo-label-sub">Camera · Gallery · Files</span>
-        </label>
-        <img class="photo-preview" id="photo-preview" alt="Preview" />
+      <button class="loc-gps-btn" id="loc-gps-btn">📍 &nbsp;Use my current location</button>
+
+      <div class="loc-result" id="loc-result">
+        <span>✅</span>
+        <div class="loc-result-text">
+          Location captured
+          <small id="loc-coords-text"></small>
+        </div>
       </div>
 
-      <!-- Art name -->
-      <div class="field">
-        <label>Art name <span>(optional)</span></label>
-        <input type="text" id="title" placeholder="e.g. Blue Elephant" />
+      <a class="loc-open-maps" id="loc-open-maps" target="_blank" rel="noopener">
+        🗺 &nbsp;Verify in Google Maps
+      </a>
+
+      <div class="loc-divider">or drop a pin</div>
+
+      <div class="loc-map-wrap">
+        <div id="loc-map"></div>
+        <div class="loc-map-hint" id="loc-map-hint">Tap the map to place a pin</div>
+      </div>
+      <p class="loc-map-sub">Drag the pin to fine-tune the exact spot</p>
+
+      <div class="step-actions">
+        <div class="btn-row">
+          <button class="btn-back" onclick="goTo(1, true)">← Back</button>
+          <button class="btn-next" style="flex:1" onclick="goTo(3)">Next →</button>
+        </div>
+        <button class="skip-btn" onclick="goTo(3)">Skip location</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Details -->
+    <div class="step-panel" id="step-3">
+      <div class="step-tag">Step 3 of 4</div>
+      <div class="step-heading">Tell us more</div>
+      <p class="step-sub">Everything here is optional — fill in what you know.</p>
+
+      <div class="detail-card">
+        <div class="detail-field">
+          <div class="detail-label">Art name <span class="optional-tag">optional</span></div>
+          <input class="detail-input" type="text" id="title" placeholder="e.g. Blue Elephant" autocomplete="off" />
+        </div>
+
+        <div class="detail-field">
+          <div class="detail-label">Artist <span class="optional-tag">optional</span></div>
+          <select class="detail-select" id="artist">
+            <option value="">Unknown / Not listed</option>
+          </select>
+        </div>
+
+        <div class="detail-field">
+          <div class="detail-label">Type <span class="optional-tag">optional</span></div>
+          <select class="detail-select" id="type">
+            <option value="">Not sure / Skip</option>
+            <option value="Mural">Mural</option>
+            <option value="Paste-up">Paste-up</option>
+            <option value="Sticker">Sticker</option>
+            <option value="Sculpture">Sculpture</option>
+            <option value="Installation">Installation</option>
+          </select>
+        </div>
+
+        <div class="detail-field">
+          <div class="detail-label">Labels <span class="optional-tag">optional</span></div>
+          <div class="tag-input-wrap" id="tag-wrap">
+            <input class="tag-text-input" id="tag-input" type="text"
+                   placeholder="hkwall, mural…" autocomplete="off" spellcheck="false" />
+          </div>
+          <div class="tag-hint">Type a label and press <strong>space</strong> to add it</div>
+        </div>
       </div>
 
-      <!-- Artist -->
-      <div class="field">
-        <label>Artist <span>(optional)</span></label>
-        <input type="text" id="artist" placeholder="e.g. Caratoes" />
+      <div class="step-actions">
+        <div class="btn-row">
+          <button class="btn-back" onclick="goTo(2, true)">← Back</button>
+          <button class="btn-next" style="flex:1" onclick="goTo(4)">Next →</button>
+        </div>
+        <button class="skip-btn" onclick="goTo(4)">Skip — submit as is</button>
       </div>
+    </div>
 
-      <!-- Type -->
-      <div class="field">
-        <label>Type</label>
-        <select id="type" required>
-          <option value="" disabled selected>Select a type…</option>
-          <option value="Mural">Mural</option>
-          <option value="Paste-up">Paste-up</option>
-          <option value="Sticker">Sticker</option>
-          <option value="Sculpture">Sculpture</option>
-          <option value="Installation">Installation</option>
-        </select>
-      </div>
+    <!-- Step 4: Submit -->
+    <div class="step-panel" id="step-4">
+      <div class="step-tag">Step 4 of 4</div>
+      <div class="step-heading">Ready!</div>
+      <p class="step-sub">Here's what you've got. Hit submit to send it for review.</p>
 
-      <!-- Notes -->
-      <div class="field">
-        <label>Notes <span>(optional)</span></label>
-        <textarea id="notes" placeholder="Anything useful — street name, nearby landmark, condition…"></textarea>
-      </div>
-
-      <!-- GPS status -->
-      <div class="gps-row">
-        <div class="gps-dot" id="gps-dot"></div>
-        <span id="gps-label">Location will be recorded on submit</span>
+      <div class="summary-card">
+        <div class="summary-row">
+          <span class="summary-key">Photo</span>
+          <img class="summary-photo-thumb" id="summary-thumb" alt="" />
+          <span class="summary-val empty" id="summary-photo-none">No photo</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Location</span>
+          <span class="summary-val" id="summary-location"></span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Name</span>
+          <span class="summary-val" id="summary-title"></span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Artist</span>
+          <span class="summary-val" id="summary-artist"></span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Type</span>
+          <span class="summary-val" id="summary-type"></span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Labels</span>
+          <span class="summary-val" id="summary-labels"></span>
+        </div>
       </div>
 
       <div class="form-error" id="form-error"></div>
 
-      <button type="submit" class="submit-btn" id="submit-btn">Submit artwork</button>
-    </form>
+      <div class="step-actions">
+        <button class="btn-next" id="submit-btn" onclick="submitForm()">Submit artwork →</button>
+        <div class="btn-row" style="margin-top:4px">
+          <button class="btn-back" style="flex:1;text-align:center" onclick="goTo(3, true)">← Back</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Thank you popup -->
@@ -420,6 +486,8 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/data.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
     const { createClient } = supabase;
@@ -428,32 +496,199 @@
       'sb_publishable_ifaWFhawHfsqym4QZdSTpg_wNExkoqv'
     );
 
-    // ── Photo preview ──────────────────────────────
-    const photoInput = document.getElementById('photo');
+    const TOTAL = 4;
+    let currentStep = 1;
+    let gpsCoords = null;
+
+    // ── Populate artist dropdown from data.js ──────
+    const artistSelect = document.getElementById('artist');
+    const knownArtists = [...new Set(
+      ARTWORKS.map(a => a.artist).filter(a => a && a !== 'Unknown')
+    )].sort();
+    knownArtists.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      artistSelect.appendChild(opt);
+    });
+    // "Other" lets them type a custom name
+    const otherOpt = document.createElement('option');
+    otherOpt.value = '__other__';
+    otherOpt.textContent = 'Other (not listed)';
+    artistSelect.appendChild(otherOpt);
+
+    // Show free-text input when "Other" selected
+    const otherInput = document.createElement('input');
+    otherInput.className = 'detail-input';
+    otherInput.type = 'text';
+    otherInput.placeholder = 'Type artist name…';
+    otherInput.id = 'artist-other';
+    otherInput.style.display = 'none';
+    otherInput.style.marginTop = '8px';
+    artistSelect.parentNode.appendChild(otherInput);
+
+    artistSelect.addEventListener('change', () => {
+      otherInput.style.display = artistSelect.value === '__other__' ? 'block' : 'none';
+      if (artistSelect.value === '__other__') otherInput.focus();
+    });
+
+    function getArtistValue() {
+      if (artistSelect.value === '__other__') return otherInput.value.trim() || null;
+      return artistSelect.value || null;
+    }
+
+    // ── Navigation ─────────────────────────────────
+    function goTo(n, back = false) {
+      document.getElementById(`step-${currentStep}`).classList.remove('active', 'enter-back');
+      currentStep = n;
+      const panel = document.getElementById(`step-${n}`);
+      panel.className = `step-panel ${back ? 'enter-back' : 'active'}`;
+      document.getElementById('progress-fill').style.width = `${(n / TOTAL) * 100}%`;
+      if (n === 2) setTimeout(initLocMap, 50);
+      if (n === 4) updateSummary();
+      const inp = panel.querySelector('.detail-input, .detail-textarea');
+      if (inp) setTimeout(() => inp.focus(), 300);
+    }
+
+    // ── Photo ──────────────────────────────────────
+    const photoInput   = document.getElementById('photo');
     const photoPreview = document.getElementById('photo-preview');
-    const photoLabel = document.getElementById('photo-label');
+    const photoLabel   = document.getElementById('photo-label');
+    const photoRetake  = document.getElementById('photo-retake');
 
     photoInput.addEventListener('change', () => {
       const file = photoInput.files[0];
       if (!file) return;
-      const url = URL.createObjectURL(file);
-      photoPreview.src = url;
+      photoPreview.src = URL.createObjectURL(file);
       photoPreview.style.display = 'block';
       photoLabel.style.display = 'none';
+      photoRetake.style.display = 'flex';
     });
 
-    // ── GPS ────────────────────────────────────────
-    let gpsCoords = null;
-    const gpsDot = document.getElementById('gps-dot');
-    const gpsLabel = document.getElementById('gps-label');
+    photoRetake.addEventListener('click', () => {
+      photoInput.value = '';
+      photoPreview.style.display = 'none';
+      photoLabel.style.display = 'flex';
+      photoRetake.style.display = 'none';
+    });
 
-    function getLocation() {
-      return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) { reject('no-gps'); return; }
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true, timeout: 12000
-        });
+    document.getElementById('step1-next').addEventListener('click', () => goTo(2));
+
+    // ── Location map ───────────────────────────────
+    const locGpsBtn     = document.getElementById('loc-gps-btn');
+    const locResult     = document.getElementById('loc-result');
+    const locCoordsText = document.getElementById('loc-coords-text');
+    const locOpenMaps   = document.getElementById('loc-open-maps');
+    const locMapHint    = document.getElementById('loc-map-hint');
+
+    let locMap = null;
+    let locPin = null;
+
+    function initLocMap() {
+      if (locMap) { locMap.invalidateSize(); return; }
+      locMap = L.map('loc-map', {
+        center: [22.2852, 114.1503], zoom: 15,
+        zoomControl: true, attributionControl: false
       });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd', maxZoom: 20
+      }).addTo(locMap);
+      locMap.on('click', e => placePin(e.latlng.lat, e.latlng.lng, 'Pinned on map'));
+    }
+
+    function placePin(lat, lng, label) {
+      if (locPin) locPin.remove();
+      locPin = L.marker([lat, lng], { draggable: true }).addTo(locMap);
+      locPin.on('dragend', () => {
+        const ll = locPin.getLatLng();
+        setLocation(ll.lat, ll.lng, 'Pinned on map');
+      });
+      locMap.panTo([lat, lng]);
+      locMapHint.classList.add('hidden');
+      setLocation(lat, lng, label);
+    }
+
+    function setLocation(lat, lng, label) {
+      gpsCoords = { lat, lng };
+      locCoordsText.textContent = label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      locResult.classList.add('visible');
+      locOpenMaps.href = `https://www.google.com/maps?q=${lat},${lng}`;
+      locOpenMaps.classList.add('visible');
+      locGpsBtn.textContent = '📍  Update with my current location';
+    }
+
+    locGpsBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) return;
+      locGpsBtn.disabled = true;
+      locGpsBtn.textContent = '⏳  Getting location…';
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          locGpsBtn.disabled = false;
+          const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+          placePin(lat, lng, `GPS · ±${Math.round(accuracy)}m`);
+          locMap.setView([lat, lng], 17);
+        },
+        () => {
+          locGpsBtn.disabled = false;
+          locGpsBtn.textContent = '📍  Try again';
+        },
+        { enableHighAccuracy: true, timeout: 12000 }
+      );
+    });
+
+    // ── Tag input ──────────────────────────────────
+    let tags = [];
+    const tagWrap  = document.getElementById('tag-wrap');
+    const tagInput = document.getElementById('tag-input');
+
+    function renderTags() {
+      tagWrap.querySelectorAll('.tag-chip').forEach(c => c.remove());
+      tags.forEach((tag, i) => {
+        const chip = document.createElement('span');
+        chip.className = 'tag-chip';
+        chip.innerHTML = `${tag} <span class="tag-chip-remove">×</span>`;
+        chip.querySelector('.tag-chip-remove').addEventListener('click', () => {
+          tags.splice(i, 1);
+          renderTags();
+        });
+        tagWrap.insertBefore(chip, tagInput);
+      });
+    }
+
+    tagInput.addEventListener('keydown', e => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        const val = tagInput.value.trim().toLowerCase().replace(/\s+/g, '');
+        if (val && !tags.includes(val)) { tags.push(val); renderTags(); }
+        tagInput.value = '';
+      }
+      if (e.key === 'Backspace' && tagInput.value === '' && tags.length > 0) {
+        tags.pop();
+        renderTags();
+      }
+    });
+
+    tagWrap.addEventListener('click', () => tagInput.focus());
+
+    // ── Summary ────────────────────────────────────
+    function updateSummary() {
+      const hasPhoto = !!photoInput.files[0];
+      const thumb   = document.getElementById('summary-thumb');
+      const noPhoto = document.getElementById('summary-photo-none');
+      if (hasPhoto) { thumb.src = photoPreview.src; thumb.style.display = 'block'; noPhoto.style.display = 'none'; }
+      else          { thumb.style.display = 'none'; noPhoto.style.display = 'inline'; }
+
+      setVal('summary-location', gpsCoords ? `${gpsCoords.lat.toFixed(4)}, ${gpsCoords.lng.toFixed(4)}` : null);
+      setVal('summary-title',    document.getElementById('title').value.trim() || null);
+      setVal('summary-artist',   getArtistValue());
+      setVal('summary-type',     document.getElementById('type').value || null);
+      setVal('summary-labels',   tags.length ? tags.join(', ') : null);
+    }
+
+    function setVal(id, val) {
+      const el = document.getElementById(id);
+      if (val) { el.textContent = val; el.className = 'summary-val'; }
+      else      { el.textContent = 'Not provided'; el.className = 'summary-val empty'; }
     }
 
     // ── Image compression ──────────────────────────
@@ -477,87 +712,76 @@
       });
     }
 
-    // ── Form submit ────────────────────────────────
-    const form = document.getElementById('art-form');
+    // ── Submit ─────────────────────────────────────
     const submitBtn = document.getElementById('submit-btn');
     const formError = document.getElementById('form-error');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    async function submitForm() {
       formError.style.display = 'none';
-
-      const type = document.getElementById('type').value;
-      if (!type) {
-        formError.textContent = 'Please select an artwork type.';
-        formError.style.display = 'block';
-        return;
-      }
-
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Getting location…';
-
-      // 1. GPS
-      try {
-        gpsDot.className = 'gps-dot';
-        gpsLabel.textContent = 'Getting your location…';
-        const pos = await getLocation();
-        gpsCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        gpsDot.classList.add('active');
-        gpsLabel.textContent = `Location captured (±${Math.round(pos.coords.accuracy)}m)`;
-      } catch {
-        gpsDot.classList.add('error');
-        gpsLabel.textContent = 'Could not get location — submitting without it';
-      }
-
-      // 2. Upload photo (compressed)
       submitBtn.textContent = 'Uploading photo…';
+
       let photo_url = null;
       const file = photoInput.files[0];
       if (file) {
         const compressed = await compressImage(file);
         const filename = `${Date.now()}.jpg`;
-        const { error: uploadError } = await db.storage.from('photos').upload(filename, compressed, { contentType: 'image/jpeg' });
-        if (!uploadError) {
-          const { data: urlData } = db.storage.from('photos').getPublicUrl(filename);
-          photo_url = urlData.publicUrl;
+        const { error: uploadErr } = await db.storage
+          .from('photos').upload(filename, compressed, { contentType: 'image/jpeg' });
+        if (!uploadErr) {
+          const { data } = db.storage.from('photos').getPublicUrl(filename);
+          photo_url = data.publicUrl;
         }
       }
 
-      // 3. Insert submission
       submitBtn.textContent = 'Submitting…';
       const { error } = await db.from('submissions').insert({
-        title: document.getElementById('title').value.trim() || null,
-        artist: document.getElementById('artist').value.trim() || null,
-        type,
-        lat: gpsCoords?.lat ?? null,
-        lng: gpsCoords?.lng ?? null,
+        title:     document.getElementById('title').value.trim() || null,
+        artist:    getArtistValue(),
+        type:      document.getElementById('type').value || null,
+        lat:       gpsCoords?.lat ?? null,
+        lng:       gpsCoords?.lng ?? null,
         photo_url,
-        notes: document.getElementById('notes').value.trim() || null
+        notes:     tags.length ? tags.join(', ') : null
       });
 
       if (error) {
         formError.textContent = 'Something went wrong. Please try again.';
         formError.style.display = 'block';
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit artwork';
+        submitBtn.textContent = 'Submit artwork →';
         return;
       }
 
       document.getElementById('ty-backdrop').classList.add('visible');
-    });
+    }
 
-    // ── Submit another ─────────────────────────────
+    // ── Reset ──────────────────────────────────────
     document.getElementById('ty-another').addEventListener('click', () => {
       document.getElementById('ty-backdrop').classList.remove('visible');
-      form.reset();
+      photoInput.value = '';
       photoPreview.style.display = 'none';
       photoLabel.style.display = 'flex';
-      gpsDot.className = 'gps-dot';
-      gpsLabel.textContent = 'Location will be recorded on submit';
+      photoRetake.style.display = 'none';
+      document.getElementById('title').value = '';
+      document.getElementById('type').value = '';
+      artistSelect.value = '';
+      tags = [];
+      tagInput.value = '';
+      renderTags();
+      otherInput.value = '';
+      otherInput.style.display = 'none';
       gpsCoords = null;
+      locResult.classList.remove('visible');
+      locOpenMaps.classList.remove('visible');
+      locMapHint.classList.remove('hidden');
+      locGpsBtn.textContent = '📍  Use my current location';
+      locGpsBtn.disabled = false;
+      if (locPin) { locPin.remove(); locPin = null; }
+      if (locMap) locMap.setView([22.2852, 114.1503], 15);
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit artwork';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      submitBtn.textContent = 'Submit artwork →';
+      goTo(1);
     });
   </script>
 </body>
