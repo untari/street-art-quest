@@ -292,6 +292,23 @@
     .skip-btn:hover { color: var(--dark); }
 
     .form-error { font-size: 12px; color: #e74c3c; font-weight: 700; display: none; margin-bottom: 10px; text-align: center; }
+    .loc-gps-error { font-size: 12px; color: #e74c3c; font-weight: 700; display: none; margin-bottom: 12px; text-align: center; line-height: 1.5; }
+
+    /* ── draft restore toast ── */
+    .draft-banner {
+      position: fixed; top: 66px; left: 0; right: 0; z-index: 99;
+      display: none; align-items: center; justify-content: center; gap: 10px;
+      padding: 9px 16px; background: rgba(46,196,182,0.12);
+      border-bottom: 1px solid var(--teal); text-align: center;
+      font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 700; color: var(--dark);
+      animation: banner-in 0.25s ease both;
+    }
+    .draft-banner.visible { display: flex; }
+    @keyframes banner-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+    .draft-banner button {
+      background: none; border: none; color: var(--teal); font-weight: 800;
+      cursor: pointer; text-decoration: underline; font-family: 'Nunito', sans-serif; font-size: 12px;
+    }
 
     /* ── thank you popup ── */
     .ty-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 2000; align-items: center; justify-content: center; padding: 24px; }
@@ -317,6 +334,11 @@
 
   <div class="progress-bar">
     <div class="progress-fill" id="progress-fill" style="width:25%"></div>
+  </div>
+
+  <div class="draft-banner" id="draft-banner">
+    <span>📝 Continuing your unfinished submission</span>
+    <button id="draft-discard">Start over</button>
   </div>
 
   <div class="stage">
@@ -361,6 +383,8 @@
       <a class="loc-open-maps" id="loc-open-maps" target="_blank" rel="noopener">
         🗺 &nbsp;Verify in Google Maps
       </a>
+
+      <p class="loc-gps-error" id="loc-gps-error"></p>
 
       <div class="loc-divider">or drop a pin</div>
 
@@ -503,6 +527,7 @@
     const TOTAL = 4;
     let currentStep = 1;
     let gpsCoords = null;
+    let autoLocAttempted = false;
 
     // ── Populate artist dropdown from data.js ──────
     const artistSelect = document.getElementById('artist');
@@ -559,10 +584,17 @@
       const panel = document.getElementById(`step-${n}`);
       panel.className = `step-panel ${back ? 'enter-back' : 'active'}`;
       document.getElementById('progress-fill').style.width = `${(n / TOTAL) * 100}%`;
-      if (n === 2) setTimeout(initLocMap, 50);
+      if (n === 2) {
+        setTimeout(initLocMap, 50);
+        if (!autoLocAttempted && !gpsCoords) {
+          autoLocAttempted = true;
+          requestGPS();
+        }
+      }
       if (n === 4) updateSummary();
       const inp = panel.querySelector('.detail-input, .detail-textarea');
       if (inp) setTimeout(() => inp.focus(), 300);
+      saveDraft();
     }
 
     // ── Photo ──────────────────────────────────────
@@ -609,6 +641,10 @@
         subdomains: 'abcd', maxZoom: 20
       }).addTo(locMap);
       locMap.on('click', e => placePin(e.latlng.lat, e.latlng.lng, 'Pinned on map'));
+      if (gpsCoords && !locPin) {
+        placePin(gpsCoords.lat, gpsCoords.lng, 'Restored location');
+        locMap.setView([gpsCoords.lat, gpsCoords.lng], 17);
+      }
     }
 
     function placePin(lat, lng, label) {
@@ -632,10 +668,13 @@
       locGpsBtn.textContent = '📍  Update with my current location';
     }
 
-    locGpsBtn.addEventListener('click', () => {
+    const locGpsError = document.getElementById('loc-gps-error');
+
+    function requestGPS() {
       if (!navigator.geolocation) return;
       locGpsBtn.disabled = true;
       locGpsBtn.textContent = '⏳  Getting location…';
+      locGpsError.style.display = 'none';
       navigator.geolocation.getCurrentPosition(
         pos => {
           locGpsBtn.disabled = false;
@@ -643,13 +682,22 @@
           placePin(lat, lng, `GPS · ±${Math.round(accuracy)}m`);
           locMap.setView([lat, lng], 17);
         },
-        () => {
+        err => {
           locGpsBtn.disabled = false;
           locGpsBtn.textContent = '📍  Try again';
+          const messages = {
+            1: 'Location permission blocked — enable it in your browser settings, or drop a pin on the map.',
+            2: 'Could not determine your location. Try again, or drop a pin on the map.',
+            3: 'Location request timed out. Try again, or drop a pin on the map.'
+          };
+          locGpsError.textContent = messages[err.code] || 'Could not get your location. Drop a pin on the map instead.';
+          locGpsError.style.display = 'block';
         },
         { enableHighAccuracy: true, timeout: 12000 }
       );
-    });
+    }
+
+    locGpsBtn.addEventListener('click', requestGPS);
 
     // ── Tag input ──────────────────────────────────
     let tags = [];
@@ -733,6 +781,11 @@
 
     async function submitForm() {
       formError.style.display = 'none';
+      if (!photoInput.files[0] && !gpsCoords) {
+        formError.textContent = 'Add a photo or pin a location before submitting.';
+        formError.style.display = 'block';
+        return;
+      }
       submitBtn.disabled = true;
       submitBtn.textContent = 'Uploading photo…';
 
@@ -768,6 +821,7 @@
         return;
       }
 
+      clearDraft();
       document.getElementById('ty-backdrop').classList.add('visible');
     }
 
@@ -789,8 +843,10 @@
       otherInput.value = '';
       otherInput.style.display = 'none';
       gpsCoords = null;
+      autoLocAttempted = false;
       locResult.classList.remove('visible');
       locOpenMaps.classList.remove('visible');
+      locGpsError.style.display = 'none';
       locMapHint.classList.remove('hidden');
       locGpsBtn.textContent = '📍  Use my current location';
       locGpsBtn.disabled = false;
@@ -798,8 +854,65 @@
       if (locMap) locMap.setView([22.2852, 114.1503], 15);
       submitBtn.disabled = false;
       submitBtn.textContent = 'Submit artwork →';
+      clearDraft();
       goTo(1);
     });
+
+    // ── Draft persistence ──────────────────────────
+    const DRAFT_KEY = 'saq_submit_draft';
+
+    function saveDraft() {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+          step: currentStep,
+          title: document.getElementById('title').value,
+          artist: artistSelect.value,
+          artistOther: otherInput.value,
+          type: typeSelect.value,
+          typeOther: typeOther.value,
+          tags,
+          gpsCoords
+        }));
+      } catch (e) {}
+    }
+
+    function clearDraft() {
+      localStorage.removeItem(DRAFT_KEY);
+    }
+
+    function restoreDraft() {
+      let draft;
+      try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY)); } catch (e) { return; }
+      if (!draft) return;
+      const hasContent = draft.title || draft.artist || draft.type || (draft.tags && draft.tags.length) || draft.gpsCoords;
+      if (!hasContent) return;
+
+      document.getElementById('title').value = draft.title || '';
+      artistSelect.value = draft.artist || '';
+      otherInput.value = draft.artistOther || '';
+      otherInput.style.display = draft.artist === '__other__' ? 'block' : 'none';
+      typeSelect.value = draft.type || '';
+      typeOther.value = draft.typeOther || '';
+      typeOther.style.display = draft.type === '__other__' ? 'block' : 'none';
+      tags = draft.tags || [];
+      renderTags();
+      if (draft.gpsCoords) {
+        gpsCoords = draft.gpsCoords;
+        autoLocAttempted = true;
+      }
+      goTo(draft.step || 1);
+
+      const banner = document.getElementById('draft-banner');
+      banner.classList.add('visible');
+      setTimeout(() => banner.classList.remove('visible'), 5000);
+    }
+
+    document.getElementById('draft-discard').addEventListener('click', () => {
+      document.getElementById('draft-banner').classList.remove('visible');
+      document.getElementById('ty-another').click();
+    });
+
+    restoreDraft();
   </script>
 </body>
 </html>
