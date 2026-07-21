@@ -294,9 +294,20 @@ function updateNavScore() {
 // ─── Filters ──────────────────────────────────────
 
 function initFilters() {
-  document.querySelectorAll('.filter-btn').forEach(btn => {
+  const container = document.getElementById('filters');
+  const types = [...new Set(ARTWORKS.map(a => a.type).filter(Boolean))].sort();
+
+  types.forEach(type => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.dataset.type = type;
+    btn.textContent = type;
+    container.appendChild(btn);
+  });
+
+  container.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       activeFilter = btn.dataset.type;
       renderMarkers();

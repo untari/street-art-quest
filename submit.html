@@ -407,7 +407,11 @@
             <option value="Sticker">Sticker</option>
             <option value="Sculpture">Sculpture</option>
             <option value="Installation">Installation</option>
+            <option value="__other__">Other…</option>
           </select>
+          <input class="detail-input" type="text" id="type-other"
+                 placeholder="Describe the type…" autocomplete="off"
+                 style="display:none;margin-top:8px" />
         </div>
 
         <div class="detail-field">
@@ -535,6 +539,17 @@
     function getArtistValue() {
       if (artistSelect.value === '__other__') return otherInput.value.trim() || null;
       return artistSelect.value || null;
+    }
+
+    const typeSelect  = document.getElementById('type');
+    const typeOther   = document.getElementById('type-other');
+    typeSelect.addEventListener('change', () => {
+      typeOther.style.display = typeSelect.value === '__other__' ? 'block' : 'none';
+      if (typeSelect.value === '__other__') typeOther.focus();
+    });
+    function getTypeValue() {
+      if (typeSelect.value === '__other__') return typeOther.value.trim() || null;
+      return typeSelect.value || null;
     }
 
     // ── Navigation ─────────────────────────────────
@@ -681,7 +696,7 @@
       setVal('summary-location', gpsCoords ? `${gpsCoords.lat.toFixed(4)}, ${gpsCoords.lng.toFixed(4)}` : null);
       setVal('summary-title',    document.getElementById('title').value.trim() || null);
       setVal('summary-artist',   getArtistValue());
-      setVal('summary-type',     document.getElementById('type').value || null);
+      setVal('summary-type',     getTypeValue());
       setVal('summary-labels',   tags.length ? tags.join(', ') : null);
     }
 
@@ -738,7 +753,7 @@
       const { error } = await db.from('submissions').insert({
         title:     document.getElementById('title').value.trim() || null,
         artist:    getArtistValue(),
-        type:      document.getElementById('type').value || null,
+        type:      getTypeValue(),
         lat:       gpsCoords?.lat ?? null,
         lng:       gpsCoords?.lng ?? null,
         photo_url,
@@ -764,7 +779,9 @@
       photoLabel.style.display = 'flex';
       photoRetake.style.display = 'none';
       document.getElementById('title').value = '';
-      document.getElementById('type').value = '';
+      typeSelect.value = '';
+      typeOther.style.display = 'none';
+      typeOther.value = '';
       artistSelect.value = '';
       tags = [];
       tagInput.value = '';
