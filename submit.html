@@ -81,15 +81,23 @@
       display: flex; flex-direction: column; align-items: center;
       justify-content: center; gap: 10px; border: 2px dashed var(--border);
       border-radius: 20px; padding: 36px 20px; cursor: pointer;
-      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      background: rgba(46,196,182,0.04);
+      transition: border-color 0.2s, background 0.2s, transform 0.15s, box-shadow 0.2s;
       position: relative; overflow: hidden; text-align: center; margin-bottom: 14px;
     }
-    .photo-drop:hover { border-color: var(--teal); background: rgba(46,196,182,0.05); transform: scale(1.01); }
+    .photo-drop:hover { border-color: var(--teal); background: rgba(46,196,182,0.08); transform: scale(1.01); }
     .photo-drop:active { transform: scale(0.99); }
     .photo-drop input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
     .photo-drop-icon  { font-size: 44px; line-height: 1; }
     .photo-drop-title { font-size: 15px; font-weight: 800; color: var(--dark); margin-top: 4px; }
     .photo-drop-sub   { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .photo-drop-cta {
+      display: inline-block; margin-top: 4px; padding: 10px 22px;
+      background: var(--teal); color: #fff; border-radius: 24px;
+      font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800;
+      letter-spacing: 0.03em; box-shadow: 0 6px 18px rgba(46,196,182,0.4);
+      pointer-events: none;
+    }
 
     .photo-preview {
       width: 100%; aspect-ratio: 4/3; object-fit: cover;
@@ -347,20 +355,22 @@
     <div class="step-panel active" id="step-1">
       <div class="step-tag">Step 1 of 4</div>
       <div class="step-heading">Got a photo?</div>
-      <p class="step-sub">Take one on the spot or pick from your gallery.</p>
+      <p class="step-sub">A photo is required — take one on the spot or pick from your gallery.</p>
 
       <label class="photo-drop" id="photo-label">
-        <input type="file" id="photo" accept="image/*" capture="environment" />
+        <input type="file" id="photo" accept="image/*" />
         <div class="photo-drop-icon">📷</div>
         <div class="photo-drop-title">Take or upload a photo</div>
         <div class="photo-drop-sub">Camera · Gallery · Files</div>
+        <span class="photo-drop-cta">Choose photo</span>
       </label>
       <img class="photo-preview" id="photo-preview" alt="Preview" />
       <button class="photo-retake" id="photo-retake">↺ &nbsp;Change photo</button>
 
+      <p class="loc-gps-error" id="photo-step-error">Add a photo to continue.</p>
+
       <div class="step-actions">
         <button class="btn-next" id="step1-next">Next →</button>
-        <button class="skip-btn" onclick="goTo(2)">Skip — no photo</button>
       </div>
     </div>
 
@@ -444,7 +454,7 @@
             <input class="tag-text-input" id="tag-input" type="text"
                    placeholder="hkwall, mural…" autocomplete="off" spellcheck="false" />
           </div>
-          <div class="tag-hint">Type a label and press <strong>space</strong> to add it</div>
+          <div class="tag-hint">Type a label, then hit <strong>space</strong>, <strong>comma</strong>, or <strong>enter</strong> to add it</div>
         </div>
       </div>
 
@@ -603,6 +613,8 @@
     const photoLabel   = document.getElementById('photo-label');
     const photoRetake  = document.getElementById('photo-retake');
 
+    const photoStepError = document.getElementById('photo-step-error');
+
     photoInput.addEventListener('change', () => {
       const file = photoInput.files[0];
       if (!file) return;
@@ -610,6 +622,7 @@
       photoPreview.style.display = 'block';
       photoLabel.style.display = 'none';
       photoRetake.style.display = 'flex';
+      photoStepError.style.display = 'none';
     });
 
     photoRetake.addEventListener('click', () => {
@@ -619,7 +632,13 @@
       photoRetake.style.display = 'none';
     });
 
-    document.getElementById('step1-next').addEventListener('click', () => goTo(2));
+    document.getElementById('step1-next').addEventListener('click', () => {
+      if (!photoInput.files[0]) {
+        photoStepError.style.display = 'block';
+        return;
+      }
+      goTo(2);
+    });
 
     // ── Location map ───────────────────────────────
     const locGpsBtn     = document.getElementById('loc-gps-btn');
@@ -718,17 +737,27 @@
       });
     }
 
+    function commitTag() {
+      const val = tagInput.value.trim().toLowerCase().replace(/[\s,]+/g, '');
+      if (val && !tags.includes(val)) { tags.push(val); renderTags(); }
+      tagInput.value = '';
+    }
+
     tagInput.addEventListener('keydown', e => {
-      if (e.key === ' ' || e.key === 'Enter') {
+      if (e.key === 'Enter') {
         e.preventDefault();
-        const val = tagInput.value.trim().toLowerCase().replace(/\s+/g, '');
-        if (val && !tags.includes(val)) { tags.push(val); renderTags(); }
-        tagInput.value = '';
+        commitTag();
       }
       if (e.key === 'Backspace' && tagInput.value === '' && tags.length > 0) {
         tags.pop();
         renderTags();
       }
+    });
+
+    // Mobile keyboards often don't fire a reliable keydown for space, so also
+    // commit on input whenever a space/comma delimiter shows up in the value.
+    tagInput.addEventListener('input', () => {
+      if (/[\s,]$/.test(tagInput.value)) commitTag();
     });
 
     tagWrap.addEventListener('click', () => tagInput.focus());
@@ -781,8 +810,8 @@
 
     async function submitForm() {
       formError.style.display = 'none';
-      if (!photoInput.files[0] && !gpsCoords) {
-        formError.textContent = 'Add a photo or pin a location before submitting.';
+      if (!photoInput.files[0]) {
+        formError.textContent = 'A photo is required before submitting.';
         formError.style.display = 'block';
         return;
       }
@@ -900,7 +929,10 @@
         gpsCoords = draft.gpsCoords;
         autoLocAttempted = true;
       }
-      goTo(draft.step || 1);
+      // Photos can't survive a reload (files aren't persisted to localStorage),
+      // so always resume at step 1 to re-gate on the now-mandatory photo —
+      // everything else restored above is still there once they click through.
+      goTo(1);
 
       const banner = document.getElementById('draft-banner');
       banner.classList.add('visible');
