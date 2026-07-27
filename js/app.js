@@ -384,27 +384,12 @@ function initLocation() {
 // ─── Mascot ───────────────────────────────────────
 
 function initMascot() {
-  const MASCOT_KEY = 'saq_mascot_dismissed';
   const mascot = document.getElementById('mascot');
   const dismiss = document.getElementById('mascot-dismiss');
 
-  if (localStorage.getItem(MASCOT_KEY)) {
-    mascot.classList.add('hidden');
-    return;
-  }
-
   dismiss.addEventListener('click', () => {
     mascot.classList.add('hidden');
-    localStorage.setItem(MASCOT_KEY, '1');
   });
-
-  // Auto-dismiss after 10 seconds
-  setTimeout(() => {
-    if (!mascot.classList.contains('hidden')) {
-      mascot.classList.add('hidden');
-      localStorage.setItem(MASCOT_KEY, '1');
-    }
-  }, 10000);
 }
 
 // ─── Welcome modal ────────────────────────────────
@@ -433,6 +418,86 @@ function handleQuestsClick() {
   }
 }
 
+// ─── Guided tour ──────────────────────────────────
+
+const TOUR_KEY = 'saq_tour_seen';
+
+const TOUR_STEPS = [
+  { selector: '#map', title: 'The map', text: 'Tap any coloured dot to see a hidden mural or street art piece nearby.' },
+  { selector: '#filters', title: 'Filter by type', text: 'Narrow the map down to just the kinds of art you want to hunt.' },
+  { selector: '#open-quests', title: 'Your quests', text: 'See your full checklist of artworks and track how many you’ve found.' },
+  { selector: '.add-btn', title: 'Add art', text: 'Spotted a piece that’s not on the map yet? Submit it here.' },
+  { selector: '#locate-btn', title: 'Find yourself', text: 'Tap to show your current location on the map.' }
+];
+
+function initTour() {
+  if (localStorage.getItem(TOUR_KEY)) return;
+
+  const overlay = document.getElementById('tour-overlay');
+  const highlight = document.getElementById('tour-highlight');
+  const tooltip = document.getElementById('tour-tooltip');
+  const titleEl = document.getElementById('tour-title');
+  const textEl = document.getElementById('tour-text');
+  const progressEl = document.getElementById('tour-progress');
+  const nextBtn = document.getElementById('tour-next');
+  const skipBtn = document.getElementById('tour-skip');
+
+  let step = 0;
+
+  function positionStep() {
+    const config = TOUR_STEPS[step];
+    const target = document.querySelector(config.selector);
+    if (!target) { nextStep(); return; }
+
+    const rect = target.getBoundingClientRect();
+    const pad = 8;
+
+    highlight.style.top = `${rect.top - pad}px`;
+    highlight.style.left = `${rect.left - pad}px`;
+    highlight.style.width = `${rect.width + pad * 2}px`;
+    highlight.style.height = `${rect.height + pad * 2}px`;
+
+    titleEl.textContent = config.title;
+    textEl.textContent = config.text;
+    progressEl.textContent = `${step + 1} / ${TOUR_STEPS.length}`;
+    nextBtn.textContent = step === TOUR_STEPS.length - 1 ? 'Done' : 'Next →';
+
+    const gap = 14;
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    tooltip.style.top = spaceBelow > tooltipRect.height + gap
+      ? `${rect.bottom + gap}px`
+      : `${Math.max(12, rect.top - tooltipRect.height - gap)}px`;
+
+    let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+    left = Math.min(Math.max(left, 12), window.innerWidth - tooltipRect.width - 12);
+    tooltip.style.left = `${left}px`;
+  }
+
+  function nextStep() {
+    step += 1;
+    if (step >= TOUR_STEPS.length) {
+      endTour();
+    } else {
+      positionStep();
+    }
+  }
+
+  function endTour() {
+    overlay.classList.add('hidden');
+    localStorage.setItem(TOUR_KEY, '1');
+    window.removeEventListener('resize', positionStep);
+  }
+
+  nextBtn.addEventListener('click', nextStep);
+  skipBtn.addEventListener('click', endTour);
+  window.addEventListener('resize', positionStep);
+
+  overlay.classList.remove('hidden');
+  positionStep();
+}
+
 // ─── Init ─────────────────────────────────────────
 
 allArtworks = ARTWORKS;
@@ -442,6 +507,7 @@ updateNavScore();
 initLocation();
 initMascot();
 initWelcome();
+initTour();
 
 document.getElementById('close-panel').addEventListener('click', closePanel);
 document.getElementById('open-quests').addEventListener('click', handleQuestsClick);
