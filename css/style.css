@@ -793,17 +793,30 @@ header {
   width: 260px;
   max-width: calc(100vw - 24px);
   background: var(--surface);
-  border-radius: 16px;
+  border-radius: 16px 16px 16px 4px;
   padding: 18px 20px;
   box-shadow: 0 12px 40px rgba(0,0,0,0.3);
   transition: top 0.3s ease, left 0.3s ease;
+}
+
+.tour-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.tour-mascot {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+  animation: mascot-bob 3s ease-in-out infinite;
 }
 
 .tour-title {
   font-size: 15px;
   font-weight: 800;
   color: var(--dark);
-  margin-bottom: 6px;
 }
 
 .tour-text {

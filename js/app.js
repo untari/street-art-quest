@@ -443,6 +443,8 @@ function initTour() {
   const skipBtn = document.getElementById('tour-skip');
 
   let step = 0;
+  const mascot = document.getElementById('mascot');
+  mascot.classList.add('hidden');
 
   function positionStep() {
     const config = TOUR_STEPS[step];
@@ -488,6 +490,7 @@ function initTour() {
     overlay.classList.add('hidden');
     localStorage.setItem(TOUR_KEY, '1');
     window.removeEventListener('resize', positionStep);
+    mascot.classList.remove('hidden');
   }
 
   nextBtn.addEventListener('click', nextStep);
