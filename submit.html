@@ -835,7 +835,7 @@
       const { error } = await db.from('submissions').insert({
         title:     document.getElementById('title').value.trim() || null,
         artist:    getArtistValue(),
-        type:      getTypeValue(),
+        type:      getTypeValue() || 'Not sure',
         lat:       gpsCoords?.lat ?? null,
         lng:       gpsCoords?.lng ?? null,
         photo_url,
