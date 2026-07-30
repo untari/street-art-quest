@@ -527,13 +527,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/data.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
   <script>
-    const { createClient } = supabase;
-    const db = createClient(
-      'https://czzligpufmcnddkqcigb.supabase.co',
-      'sb_publishable_ifaWFhawHfsqym4QZdSTpg_wNExkoqv'
-    );
-
     const TOTAL = 4;
     let currentStep = 1;
     let gpsCoords = null;

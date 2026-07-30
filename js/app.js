@@ -295,25 +295,68 @@ function updateNavScore() {
 
 function initFilters() {
   const container = document.getElementById('filters');
-  const types = [...new Set(ARTWORKS.map(a => a.type).filter(Boolean))].sort();
+  const types = [...new Set(allArtworks.map(a => a.type).filter(Boolean))].sort();
+
+  container.querySelectorAll('.filter-btn[data-type]:not([data-type="all"])').forEach(btn => btn.remove());
 
   types.forEach(type => {
     const btn = document.createElement('button');
     btn.className = 'filter-btn';
     btn.dataset.type = type;
     btn.textContent = type;
+    if (type === activeFilter) btn.classList.add('active');
     container.appendChild(btn);
   });
 
   container.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.onclick = () => {
       container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       activeFilter = btn.dataset.type;
       renderMarkers();
       closePanel();
-    });
+    };
   });
+}
+
+// ─── Community submissions ────────────────────────
+
+function mapSubmissionToArtwork(row) {
+  return {
+    id: `sub-${row.id}`,
+    title: row.title || 'Untitled Find',
+    artist: row.artist || 'Unknown',
+    type: row.type && row.type !== 'Not sure' ? row.type : 'Other',
+    lat: row.lat,
+    lng: row.lng,
+    photo: row.photo_url || '',
+    commissioned: false,
+    address: 'Community find, Sheung Wan',
+    hint: 'Spotted by a fellow hunter — exact clue coming soon. Look around the pinned location.',
+    radius: 40
+  };
+}
+
+async function loadApprovedSubmissions() {
+  if (typeof db === 'undefined') return;
+
+  const { data, error } = await db
+    .from('submissions')
+    .select('*')
+    .eq('status', 'approved');
+
+  if (error || !data || !data.length) return;
+
+  const community = data
+    .filter(row => row.lat != null && row.lng != null)
+    .map(mapSubmissionToArtwork);
+
+  if (!community.length) return;
+
+  allArtworks = allArtworks.concat(community);
+  initFilters();
+  renderMarkers();
+  updateNavScore();
 }
 
 // ─── User location ────────────────────────────────
@@ -511,6 +554,7 @@ initLocation();
 initMascot();
 initWelcome();
 initTour();
+loadApprovedSubmissions();
 
 document.getElementById('close-panel').addEventListener('click', closePanel);
 document.getElementById('open-quests').addEventListener('click', handleQuestsClick);
