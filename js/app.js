@@ -426,13 +426,36 @@ function initLocation() {
 
 // ─── Mascot ───────────────────────────────────────
 
-function initMascot() {
+function initMascot(startTour) {
   const mascot = document.getElementById('mascot');
-  const dismiss = document.getElementById('mascot-dismiss');
+  const dismissBtn = document.getElementById('mascot-dismiss');
+  const actionsEl = document.getElementById('mascot-actions');
+  const titleEl = document.getElementById('mascot-title');
+  const textEl = document.getElementById('mascot-text');
 
-  dismiss.addEventListener('click', () => {
+  dismissBtn.addEventListener('click', () => {
     mascot.classList.add('hidden');
   });
+
+  function showNormalState() {
+    actionsEl.classList.add('hidden');
+    dismissBtn.classList.remove('hidden');
+    titleEl.textContent = 'Welcome to Sheung Wan!';
+    textEl.textContent = 'Tap a dot on the map to start exploring.';
+  }
+
+  if (startTour) {
+    document.getElementById('mascot-walkthrough').addEventListener('click', () => {
+      showNormalState();
+      startTour();
+    });
+    document.getElementById('mascot-skip').addEventListener('click', () => {
+      localStorage.setItem(TOUR_KEY, '1');
+      showNormalState();
+    });
+  } else {
+    showNormalState();
+  }
 }
 
 // ─── Welcome modal ────────────────────────────────
@@ -474,7 +497,7 @@ const TOUR_STEPS = [
 ];
 
 function initTour() {
-  if (localStorage.getItem(TOUR_KEY)) return;
+  if (localStorage.getItem(TOUR_KEY)) return null;
 
   const overlay = document.getElementById('tour-overlay');
   const highlight = document.getElementById('tour-highlight');
@@ -484,10 +507,9 @@ function initTour() {
   const progressEl = document.getElementById('tour-progress');
   const nextBtn = document.getElementById('tour-next');
   const skipBtn = document.getElementById('tour-skip');
+  const mascot = document.getElementById('mascot');
 
   let step = 0;
-  const mascot = document.getElementById('mascot');
-  mascot.classList.add('hidden');
 
   function positionStep() {
     const config = TOUR_STEPS[step];
@@ -540,8 +562,11 @@ function initTour() {
   skipBtn.addEventListener('click', endTour);
   window.addEventListener('resize', positionStep);
 
-  overlay.classList.remove('hidden');
-  positionStep();
+  return function startTour() {
+    mascot.classList.add('hidden');
+    overlay.classList.remove('hidden');
+    positionStep();
+  };
 }
 
 // ─── Init ─────────────────────────────────────────
@@ -551,9 +576,9 @@ initFilters();
 renderMarkers();
 updateNavScore();
 initLocation();
-initMascot();
+const startTour = initTour();
+initMascot(startTour);
 initWelcome();
-initTour();
 loadApprovedSubmissions();
 
 document.getElementById('close-panel').addEventListener('click', closePanel);

@@ -58,9 +58,13 @@
   <div id="mascot" class="mascot">
     <div class="mascot-character">🧑‍🎨</div>
     <div class="mascot-bubble">
-      <button class="mascot-dismiss" id="mascot-dismiss" aria-label="Dismiss">×</button>
-      <strong>Welcome to Sheung Wan!</strong>
-      <span>20 artworks are hiding on these streets. Tap a dot to start exploring.</span>
+      <button class="mascot-dismiss hidden" id="mascot-dismiss" aria-label="Dismiss">×</button>
+      <strong id="mascot-title">Welcome to Sheung Wan!</strong>
+      <span id="mascot-text">Street art is hiding on these streets. Want a quick walkthrough?</span>
+      <div class="mascot-actions" id="mascot-actions">
+        <button class="mascot-btn mascot-btn-primary" id="mascot-walkthrough">Take the tour</button>
+        <button class="mascot-btn mascot-btn-secondary" id="mascot-skip">Skip</button>
+      </div>
     </div>
   </div>
 
