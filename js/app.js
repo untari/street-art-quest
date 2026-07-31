@@ -468,20 +468,19 @@ function initWelcome() {
     questBtn.classList.add('pulsing');
   }
 
-  document.getElementById('welcome-start').addEventListener('click', () => {
+  function dismissWelcome() {
     document.getElementById('welcome-backdrop').classList.add('hidden');
     localStorage.setItem(WELCOME_KEY, '1');
     openQuestPanel();
-  });
+  }
+
+  document.getElementById('welcome-start').addEventListener('click', dismissWelcome);
+  document.getElementById('welcome-skip').addEventListener('click', dismissWelcome);
 }
 
 function handleQuestsClick() {
-  if (!localStorage.getItem(WELCOME_KEY)) {
-    document.getElementById('open-quests').classList.remove('pulsing');
-    document.getElementById('welcome-backdrop').classList.remove('hidden');
-  } else {
-    openQuestPanel();
-  }
+  document.getElementById('open-quests').classList.remove('pulsing');
+  document.getElementById('welcome-backdrop').classList.remove('hidden');
 }
 
 // ─── Guided tour ──────────────────────────────────

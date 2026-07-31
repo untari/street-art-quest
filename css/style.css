@@ -997,6 +997,23 @@ header {
 
 .welcome-start:hover { opacity: 0.9; transform: scale(1.02); }
 
+.welcome-skip {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px;
+  margin-bottom: 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.welcome-skip:hover { color: var(--dark); }
+
 .welcome-hint {
   font-size: 11px;
   color: var(--muted);
