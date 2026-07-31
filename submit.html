@@ -16,7 +16,7 @@
     /* ── top bar ── */
     .submit-header {
       position: fixed; top: 0; left: 0; right: 0; height: 56px;
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; align-items: center; justify-content: center;
       padding: 0 20px; background: var(--bg); z-index: 100;
       border-bottom: 1px solid var(--border);
     }
@@ -26,6 +26,7 @@
     }
     .submit-header .logo span { color: var(--teal); }
     .back-link {
+      display: block; text-align: center; margin-top: 4px;
       font-size: 12px; font-weight: 800; color: var(--muted);
       text-decoration: none; letter-spacing: 0.06em; transition: color 0.15s;
     }
@@ -347,7 +348,6 @@
 
   <div class="submit-header">
     <a href="index.html" class="logo">STREET ART <span>QUEST</span></a>
-    <a href="index.html" class="back-link">← Map</a>
   </div>
 
   <div class="progress-bar">
@@ -385,6 +385,7 @@
 
       <div class="step-actions">
         <button class="btn-next" id="step1-next">Next →</button>
+        <a href="index.html" class="back-link">← Back to map</a>
       </div>
     </div>
 
