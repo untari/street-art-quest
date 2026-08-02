@@ -89,7 +89,7 @@
     .photo-drop-icon  { font-size: 44px; line-height: 1; }
     .photo-drop-title { font-size: 15px; font-weight: 800; color: var(--dark); margin-top: 4px; }
     .photo-drop-sub   { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
-    .photo-choice-row { display: flex; gap: 10px; width: 100%; margin-top: 6px; }
+    .photo-choice-row { display: flex; gap: 10px; width: 100%; margin-bottom: 14px; }
     .photo-choice-btn {
       flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
       padding: 12px 10px; border-radius: 24px; cursor: pointer;
@@ -110,7 +110,7 @@
       overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
     }
 
-    .photo-preview-wrap { position: relative; display: none; margin-bottom: 14px; }
+    .photo-preview-wrap { display: none; margin-bottom: 14px; }
     .photo-preview-wrap.visible { display: block; }
     .photo-preview {
       width: 100%; aspect-ratio: 4/3; object-fit: cover;
@@ -119,15 +119,6 @@
       animation: photo-in 0.3s cubic-bezier(0.34,1.3,0.64,1) both;
     }
     @keyframes photo-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
-    .photo-retake {
-      position: absolute; top: 10px; right: 10px; width: 36px; height: 36px;
-      border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: #fff;
-      font-size: 16px; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; backdrop-filter: blur(4px);
-      transition: background 0.15s, transform 0.15s;
-    }
-    .photo-retake:hover { background: rgba(0,0,0,0.75); transform: scale(1.08); }
-    .photo-retake:active { transform: scale(0.94); }
 
     /* ── location step ── */
     .loc-choice-row { display: flex; gap: 10px; width: 100%; margin-bottom: 14px; }
@@ -205,7 +196,6 @@
     }
 
     .detail-input,
-    .detail-select,
     .detail-textarea {
       padding: 11px 13px;
       border: 1.5px solid var(--border);
@@ -215,13 +205,31 @@
       color: var(--dark); background: var(--bg);
       outline: none; transition: border-color 0.15s, background 0.15s;
       appearance: none; -webkit-appearance: none;
+      width: 100%;
     }
     .detail-input:focus,
-    .detail-select:focus,
     .detail-textarea:focus { border-color: var(--teal); background: #fff; }
     .detail-input::placeholder,
     .detail-textarea::placeholder { color: #ccc; }
     .detail-textarea { resize: none; height: 80px; }
+
+    /* ── autocomplete ── */
+    .ac-wrap { position: relative; }
+    .ac-suggestions {
+      display: none;
+      position: fixed; z-index: 200;
+      background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      overflow-y: auto;
+    }
+    .ac-suggestions.visible { display: block; }
+    .ac-suggestion {
+      padding: 10px 13px; font-family: 'Nunito', sans-serif;
+      font-size: 13px; font-weight: 600; color: var(--dark); cursor: pointer;
+      transition: background 0.1s;
+    }
+    .ac-suggestion:hover { background: rgba(46,196,182,0.1); }
+    .ac-suggestion + .ac-suggestion { border-top: 1px solid var(--bg); }
 
     /* ── tag input ── */
     .tag-input-wrap {
@@ -259,12 +267,6 @@
       font-size: 11px; color: var(--muted); font-weight: 600;
       margin-top: 4px;
     }
-
-    .detail-select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 13px center; padding-right: 34px;
-    }
-    .detail-select option[value=""] { color: #aaa; }
 
     /* ── summary ── */
     .summary-card {
@@ -372,17 +374,17 @@
         <div class="photo-drop-icon">📷</div>
         <div class="photo-drop-title">Add a photo</div>
         <div class="photo-drop-sub">We'll ask permission to use your camera</div>
-        <div class="photo-choice-row">
-          <label class="photo-choice-btn" for="photo-camera">📷 Take photo</label>
-          <label class="photo-choice-btn" for="photo-gallery">🖼️ Gallery</label>
-        </div>
-        <input class="visually-hidden" type="file" id="photo-camera" accept="image/*" capture="environment" />
-        <input class="visually-hidden" type="file" id="photo-gallery" accept="image/*" />
       </div>
       <div class="photo-preview-wrap" id="photo-preview-wrap">
         <img class="photo-preview" id="photo-preview" alt="Preview" />
-        <button class="photo-retake" id="photo-retake" aria-label="Change photo">⟲</button>
       </div>
+
+      <div class="photo-choice-row">
+        <label class="photo-choice-btn" for="photo-camera">📷 Take photo</label>
+        <label class="photo-choice-btn" for="photo-gallery">🖼️ Gallery</label>
+      </div>
+      <input class="visually-hidden" type="file" id="photo-camera" accept="image/*" capture="environment" />
+      <input class="visually-hidden" type="file" id="photo-gallery" accept="image/*" />
 
       <p class="loc-gps-error" id="photo-step-error">Add a photo to continue.</p>
 
@@ -399,7 +401,7 @@
       <p class="step-sub">Choose how you'd like to set the spot.</p>
 
       <div class="loc-choice-row">
-        <button class="loc-choice-btn" id="loc-gps-btn">📍 Use my location</button>
+        <button class="loc-choice-btn" id="loc-gps-btn">📍 Guess my location (GPS)</button>
         <button class="loc-choice-btn" id="loc-pin-btn">📌 Drop a pin</button>
       </div>
 
@@ -442,32 +444,28 @@
 
         <div class="detail-field">
           <div class="detail-label">Artist <span class="optional-tag">optional</span></div>
-          <select class="detail-select" id="artist">
-            <option value="">Unknown / Not listed</option>
-          </select>
+          <div class="ac-wrap">
+            <input class="detail-input" type="text" id="artist" placeholder="Start typing a name…" autocomplete="off" />
+            <div class="ac-suggestions" id="artist-suggestions"></div>
+          </div>
         </div>
 
         <div class="detail-field">
           <div class="detail-label">Type <span class="optional-tag">optional</span></div>
-          <select class="detail-select" id="type">
-            <option value="">Not sure / Skip</option>
-            <option value="Mural">Mural</option>
-            <option value="Paste-up">Paste-up</option>
-            <option value="Sticker">Sticker</option>
-            <option value="Sculpture">Sculpture</option>
-            <option value="Installation">Installation</option>
-            <option value="__other__">Other…</option>
-          </select>
-          <input class="detail-input" type="text" id="type-other"
-                 placeholder="Describe the type…" autocomplete="off"
-                 style="display:none;margin-top:8px" />
+          <div class="ac-wrap">
+            <input class="detail-input" type="text" id="type" placeholder="e.g. Mural, Sticker…" autocomplete="off" />
+            <div class="ac-suggestions" id="type-suggestions"></div>
+          </div>
         </div>
 
         <div class="detail-field">
           <div class="detail-label">Labels <span class="optional-tag">optional</span></div>
-          <div class="tag-input-wrap" id="tag-wrap">
-            <input class="tag-text-input" id="tag-input" type="text"
-                   placeholder="hkwall, mural…" autocomplete="off" spellcheck="false" />
+          <div class="ac-wrap">
+            <div class="tag-input-wrap" id="tag-wrap">
+              <input class="tag-text-input" id="tag-input" type="text"
+                     placeholder="hkwall, mural…" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="ac-suggestions" id="tag-suggestions"></div>
           </div>
           <div class="tag-hint">Type a label, then hit <strong>space</strong>, <strong>comma</strong>, or <strong>enter</strong> to add it</div>
         </div>
@@ -548,53 +546,91 @@
     let currentStep = 1;
     let gpsCoords = null;
 
-    // ── Populate artist dropdown from data.js ──────
-    const artistSelect = document.getElementById('artist');
+    // ── Autocomplete ────────────────────────────────
+    function setupAutocomplete(inputEl, suggestionsEl, getOptions, onSelect) {
+      const MARGIN = 8;
+      const PREFERRED_HEIGHT = 220;
+
+      // Ancestors with an animated `transform` (even one that resolves to an
+      // identity matrix at rest) create a containing block for `position:
+      // fixed` children, which breaks viewport-relative positioning. Portal
+      // to <body> so this dropdown is never affected by that.
+      document.body.appendChild(suggestionsEl);
+
+      function position() {
+        const rect = inputEl.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom - MARGIN;
+        const spaceAbove = rect.top - MARGIN;
+        suggestionsEl.style.left = `${rect.left}px`;
+        suggestionsEl.style.width = `${rect.width}px`;
+        if (spaceBelow >= 100 || spaceBelow >= spaceAbove) {
+          suggestionsEl.style.top = `${rect.bottom + 4}px`;
+          suggestionsEl.style.bottom = 'auto';
+          suggestionsEl.style.maxHeight = `${Math.max(80, Math.min(PREFERRED_HEIGHT, spaceBelow))}px`;
+        } else {
+          suggestionsEl.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+          suggestionsEl.style.top = 'auto';
+          suggestionsEl.style.maxHeight = `${Math.max(80, Math.min(PREFERRED_HEIGHT, spaceAbove))}px`;
+        }
+      }
+
+      function render() {
+        const q = inputEl.value.trim().toLowerCase();
+        const options = getOptions();
+        const matches = q ? options.filter(o => o.toLowerCase().includes(q)) : options;
+        if (!matches.length) {
+          suggestionsEl.classList.remove('visible');
+          suggestionsEl.innerHTML = '';
+          return;
+        }
+        suggestionsEl.innerHTML = '';
+        matches.forEach(opt => {
+          const item = document.createElement('div');
+          item.className = 'ac-suggestion';
+          item.textContent = opt;
+          item.addEventListener('mousedown', e => {
+            e.preventDefault();
+            onSelect(opt);
+            suggestionsEl.classList.remove('visible');
+          });
+          suggestionsEl.appendChild(item);
+        });
+        position();
+        suggestionsEl.classList.add('visible');
+      }
+
+      inputEl.addEventListener('input', render);
+      inputEl.addEventListener('focus', render);
+      inputEl.addEventListener('blur', () => suggestionsEl.classList.remove('visible'));
+      window.addEventListener('scroll', () => {
+        if (suggestionsEl.classList.contains('visible')) position();
+      }, true);
+      window.addEventListener('resize', () => {
+        if (suggestionsEl.classList.contains('visible')) position();
+      });
+    }
+
+    // ── Artist ──────────────────────────────────────
+    const artistInput = document.getElementById('artist');
     const knownArtists = [...new Set(
       ARTWORKS.map(a => a.artist).filter(a => a && a !== 'Unknown')
     )].sort();
-    knownArtists.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      artistSelect.appendChild(opt);
-    });
-    // "Other" lets them type a custom name
-    const otherOpt = document.createElement('option');
-    otherOpt.value = '__other__';
-    otherOpt.textContent = 'Other (not listed)';
-    artistSelect.appendChild(otherOpt);
+    setupAutocomplete(
+      artistInput, document.getElementById('artist-suggestions'),
+      () => knownArtists,
+      name => { artistInput.value = name; }
+    );
+    function getArtistValue() { return artistInput.value.trim() || null; }
 
-    // Show free-text input when "Other" selected
-    const otherInput = document.createElement('input');
-    otherInput.className = 'detail-input';
-    otherInput.type = 'text';
-    otherInput.placeholder = 'Type artist name…';
-    otherInput.id = 'artist-other';
-    otherInput.style.display = 'none';
-    otherInput.style.marginTop = '8px';
-    artistSelect.parentNode.appendChild(otherInput);
-
-    artistSelect.addEventListener('change', () => {
-      otherInput.style.display = artistSelect.value === '__other__' ? 'block' : 'none';
-      if (artistSelect.value === '__other__') otherInput.focus();
-    });
-
-    function getArtistValue() {
-      if (artistSelect.value === '__other__') return otherInput.value.trim() || null;
-      return artistSelect.value || null;
-    }
-
-    const typeSelect  = document.getElementById('type');
-    const typeOther   = document.getElementById('type-other');
-    typeSelect.addEventListener('change', () => {
-      typeOther.style.display = typeSelect.value === '__other__' ? 'block' : 'none';
-      if (typeSelect.value === '__other__') typeOther.focus();
-    });
-    function getTypeValue() {
-      if (typeSelect.value === '__other__') return typeOther.value.trim() || null;
-      return typeSelect.value || null;
-    }
+    // ── Type ────────────────────────────────────────
+    const typeInput = document.getElementById('type');
+    const TYPE_OPTIONS = ['Mural', 'Paste-up', 'Sticker', 'Sculpture', 'Installation'];
+    setupAutocomplete(
+      typeInput, document.getElementById('type-suggestions'),
+      () => TYPE_OPTIONS,
+      val => { typeInput.value = val; }
+    );
+    function getTypeValue() { return typeInput.value.trim() || null; }
 
     // ── Navigation ─────────────────────────────────
     function goTo(n, back = false) {
@@ -618,7 +654,6 @@
     const photoPreviewWrap = document.getElementById('photo-preview-wrap');
     const photoPreview = document.getElementById('photo-preview');
     const photoLabel   = document.getElementById('photo-label');
-    const photoRetake  = document.getElementById('photo-retake');
 
     const photoStepError = document.getElementById('photo-step-error');
 
@@ -638,14 +673,6 @@
 
     photoCameraInput.addEventListener('change', () => onPhotoChosen(photoCameraInput.files[0]));
     photoGalleryInput.addEventListener('change', () => onPhotoChosen(photoGalleryInput.files[0]));
-
-    photoRetake.addEventListener('click', () => {
-      selectedFile = null;
-      photoCameraInput.value = '';
-      photoGalleryInput.value = '';
-      photoPreviewWrap.classList.remove('visible');
-      photoLabel.style.display = 'flex';
-    });
 
     document.getElementById('step1-next').addEventListener('click', () => {
       if (!selectedFile) {
@@ -708,7 +735,7 @@
       locResult.classList.add('visible');
       locOpenMaps.href = `https://www.google.com/maps?q=${lat},${lng}`;
       locGpsBtn.classList.remove('retry');
-      locGpsBtn.textContent = '📍 Update my location';
+      locGpsBtn.textContent = '📍 Guess again (GPS)';
     }
 
     const locGpsError = document.getElementById('loc-gps-error');
@@ -717,12 +744,12 @@
       if (!navigator.geolocation) return;
       locGpsBtn.disabled = true;
       locGpsBtn.classList.remove('retry');
-      locGpsBtn.textContent = '⏳ Getting location…';
+      locGpsBtn.textContent = '⏳ Guessing your location…';
       locGpsError.style.display = 'none';
       navigator.geolocation.getCurrentPosition(
         pos => {
           locGpsBtn.disabled = false;
-          locGpsBtn.textContent = '📍 Update my location';
+          locGpsBtn.textContent = '📍 Guess again (GPS)';
           const { latitude: lat, longitude: lng, accuracy } = pos.coords;
           placePin(lat, lng, `GPS · ±${Math.round(accuracy)}m`);
           locMap.setView([lat, lng], 17);
@@ -764,9 +791,13 @@
       });
     }
 
-    function commitTag() {
-      const val = tagInput.value.trim().toLowerCase().replace(/[\s,]+/g, '');
+    function addTag(raw) {
+      const val = raw.trim().toLowerCase().replace(/[\s,]+/g, '');
       if (val && !tags.includes(val)) { tags.push(val); renderTags(); }
+    }
+
+    function commitTag() {
+      addTag(tagInput.value);
       tagInput.value = '';
     }
 
@@ -788,6 +819,17 @@
     });
 
     tagWrap.addEventListener('click', () => tagInput.focus());
+
+    const LABEL_SUGGESTIONS = [
+      'hkwall', 'mural', 'stencil', 'paste-up', 'sticker', 'installation',
+      'portrait', 'abstract', 'political', 'cute', 'collab', 'graffiti',
+      '3d', 'blackandwhite', 'colorful'
+    ];
+    setupAutocomplete(
+      tagInput, document.getElementById('tag-suggestions'),
+      () => LABEL_SUGGESTIONS.filter(l => !tags.includes(l)),
+      val => { addTag(val); tagInput.value = ''; tagInput.focus(); }
+    );
 
     // ── Summary ────────────────────────────────────
     function updateSummary() {
@@ -890,22 +932,18 @@
       photoPreviewWrap.classList.remove('visible');
       photoLabel.style.display = 'flex';
       document.getElementById('title').value = '';
-      typeSelect.value = '';
-      typeOther.style.display = 'none';
-      typeOther.value = '';
-      artistSelect.value = '';
+      typeInput.value = '';
+      artistInput.value = '';
       tags = [];
       tagInput.value = '';
       renderTags();
-      otherInput.value = '';
-      otherInput.style.display = 'none';
       gpsCoords = null;
       locResult.classList.remove('visible');
       locGpsError.style.display = 'none';
       locMapHint.textContent = 'Tap the map to place a pin';
       locMapWrap.classList.remove('pulse');
       locGpsBtn.classList.remove('retry');
-      locGpsBtn.textContent = '📍 Use my location';
+      locGpsBtn.textContent = '📍 Guess my location (GPS)';
       locGpsBtn.disabled = false;
       if (locPin) { locPin.remove(); locPin = null; }
       if (locMap) locMap.setView([22.2852, 114.1503], 15);
@@ -923,10 +961,8 @@
         localStorage.setItem(DRAFT_KEY, JSON.stringify({
           step: currentStep,
           title: document.getElementById('title').value,
-          artist: artistSelect.value,
-          artistOther: otherInput.value,
-          type: typeSelect.value,
-          typeOther: typeOther.value,
+          artist: artistInput.value,
+          type: typeInput.value,
           tags,
           gpsCoords
         }));
@@ -945,12 +981,8 @@
       if (!hasContent) return;
 
       document.getElementById('title').value = draft.title || '';
-      artistSelect.value = draft.artist || '';
-      otherInput.value = draft.artistOther || '';
-      otherInput.style.display = draft.artist === '__other__' ? 'block' : 'none';
-      typeSelect.value = draft.type || '';
-      typeOther.value = draft.typeOther || '';
-      typeOther.style.display = draft.type === '__other__' ? 'block' : 'none';
+      artistInput.value = draft.artist || '';
+      typeInput.value = draft.type || '';
       tags = draft.tags || [];
       renderTags();
       if (draft.gpsCoords) {
