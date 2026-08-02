@@ -130,48 +130,31 @@
     .photo-retake:active { transform: scale(0.94); }
 
     /* ── location step ── */
-    .loc-gps-btn {
-      width: 100%; padding: 17px 20px; background: var(--teal); color: #fff;
-      border: none; border-radius: 16px; font-family: 'Nunito', sans-serif;
-      font-size: 15px; font-weight: 800; cursor: pointer;
-      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
-      box-shadow: 0 6px 20px rgba(46,196,182,0.4);
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      margin-bottom: 14px;
-    }
-    .loc-gps-btn:hover { opacity: 0.92; transform: translateY(-1px); }
-    .loc-gps-btn:active { transform: scale(0.98); }
-    .loc-gps-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; }
-    .loc-gps-btn.retry { font-size: 16px; font-weight: 400; }
-
-    .loc-result {
-      display: none; align-items: center; gap: 10px;
-      padding: 12px 14px; background: rgba(46,196,182,0.1);
-      border: 1.5px solid var(--teal); border-radius: 14px; margin-bottom: 12px;
-    }
-    .loc-result.visible { display: flex; }
-    .loc-result-text { font-size: 13px; font-weight: 800; color: var(--dark); line-height: 1.4; }
-    .loc-result-text small { display: block; font-weight: 600; color: var(--muted); font-size: 11px; margin-top: 1px; }
-
-    .loc-open-maps {
-      display: none; width: 100%; padding: 11px; background: none;
-      border: 1.5px solid var(--border); border-radius: 12px;
+    .loc-choice-row { display: flex; gap: 10px; width: 100%; margin-bottom: 14px; }
+    .loc-choice-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 13px 10px; border-radius: 24px; cursor: pointer;
       font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800;
-      color: var(--dark); cursor: pointer; text-decoration: none; text-align: center;
-      transition: border-color 0.15s, background 0.15s; margin-bottom: 12px;
+      letter-spacing: 0.02em;
+      background: none; color: var(--dark); border: 1.5px solid var(--border);
+      transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
     }
-    .loc-open-maps:hover { border-color: var(--teal); background: rgba(46,196,182,0.05); }
-    .loc-open-maps.visible { display: block; }
-
-    .loc-divider {
-      display: flex; align-items: center; gap: 12px;
-      font-size: 14px; font-weight: 400; color: var(--dark);
-      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;
+    .loc-choice-btn:hover:not(:disabled) {
+      transform: scale(1.03);
+      background: var(--teal); color: #fff; border-color: var(--teal);
+      box-shadow: 0 6px 18px rgba(46,196,182,0.4);
     }
-    .loc-divider::before, .loc-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .loc-choice-btn:active:not(:disabled) { transform: scale(0.98); }
+    .loc-choice-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .loc-choice-btn.retry { background: var(--dark); color: #fff; border-color: var(--dark); }
 
-    .loc-map-wrap { position: relative; margin-bottom: 8px; }
-    #loc-map { width: 100%; height: 210px; border-radius: 16px; overflow: hidden; border: 1.5px solid var(--border); }
+    .loc-map-wrap { position: relative; margin-bottom: 12px; }
+    #loc-map { width: 100%; height: 240px; border-radius: 16px; overflow: hidden; border: 1.5px solid var(--border); transition: box-shadow 0.3s; }
+    .loc-map-wrap.pulse #loc-map { animation: loc-pulse 0.9s ease; }
+    @keyframes loc-pulse {
+      0%, 100% { box-shadow: none; }
+      50% { box-shadow: 0 0 0 6px rgba(46,196,182,0.35); }
+    }
     .loc-map-hint {
       position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
       background: rgba(0,0,0,0.62); color: #fff;
@@ -179,8 +162,20 @@
       padding: 5px 12px; border-radius: 20px; pointer-events: none;
       white-space: nowrap; transition: opacity 0.3s;
     }
-    .loc-map-hint.hidden { opacity: 0; }
-    .loc-map-sub { font-size: 11px; color: var(--muted); font-weight: 600; text-align: center; margin-bottom: 14px; }
+
+    .loc-result {
+      display: none; align-items: center; gap: 10px;
+      padding: 10px 14px; background: rgba(46,196,182,0.1);
+      border: 1.5px solid var(--teal); border-radius: 14px; margin-bottom: 12px;
+    }
+    .loc-result.visible { display: flex; }
+    .loc-result-text { flex: 1; font-size: 13px; font-weight: 800; color: var(--dark); line-height: 1.4; }
+    .loc-result-text small { display: block; font-weight: 600; color: var(--muted); font-size: 11px; margin-top: 1px; }
+    .loc-verify-link {
+      font-size: 11px; font-weight: 800; color: var(--teal);
+      text-decoration: none; white-space: nowrap;
+    }
+    .loc-verify-link:hover { text-decoration: underline; }
 
     /* ── details form card ── */
     .detail-card {
@@ -401,9 +396,17 @@
     <div class="step-panel" id="step-2">
       <div class="step-tag">Step 2 of 4</div>
       <div class="step-heading">Where is it?</div>
-      <p class="step-sub">Use GPS or tap the map to pin the exact spot.</p>
+      <p class="step-sub">Choose how you'd like to set the spot.</p>
 
-      <button class="loc-gps-btn" id="loc-gps-btn">📍 &nbsp;Use my current location</button>
+      <div class="loc-choice-row">
+        <button class="loc-choice-btn" id="loc-gps-btn">📍 Use my location</button>
+        <button class="loc-choice-btn" id="loc-pin-btn">📌 Drop a pin</button>
+      </div>
+
+      <div class="loc-map-wrap" id="loc-map-wrap">
+        <div id="loc-map"></div>
+        <div class="loc-map-hint" id="loc-map-hint">Tap the map to place a pin</div>
+      </div>
 
       <div class="loc-result" id="loc-result">
         <span>✅</span>
@@ -411,21 +414,10 @@
           Location captured
           <small id="loc-coords-text"></small>
         </div>
+        <a class="loc-verify-link" id="loc-open-maps" target="_blank" rel="noopener">Verify ↗</a>
       </div>
-
-      <a class="loc-open-maps" id="loc-open-maps" target="_blank" rel="noopener">
-        🗺 &nbsp;Verify in Google Maps
-      </a>
 
       <p class="loc-gps-error" id="loc-gps-error"></p>
-
-      <div class="loc-divider">or drop a pin</div>
-
-      <div class="loc-map-wrap">
-        <div id="loc-map"></div>
-        <div class="loc-map-hint" id="loc-map-hint">Tap the map to place a pin</div>
-      </div>
-      <p class="loc-map-sub">Drag the pin to fine-tune the exact spot</p>
 
       <div class="step-actions">
         <div class="btn-row">
@@ -665,10 +657,19 @@
 
     // ── Location map ───────────────────────────────
     const locGpsBtn     = document.getElementById('loc-gps-btn');
+    const locPinBtn      = document.getElementById('loc-pin-btn');
+    const locMapWrap     = document.getElementById('loc-map-wrap');
     const locResult     = document.getElementById('loc-result');
     const locCoordsText = document.getElementById('loc-coords-text');
     const locOpenMaps   = document.getElementById('loc-open-maps');
     const locMapHint    = document.getElementById('loc-map-hint');
+
+    locPinBtn.addEventListener('click', () => {
+      locMapWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      locMapWrap.classList.remove('pulse');
+      void locMapWrap.offsetWidth;
+      locMapWrap.classList.add('pulse');
+    });
 
     let locMap = null;
     let locPin = null;
@@ -697,7 +698,7 @@
         setLocation(ll.lat, ll.lng, 'Pinned on map');
       });
       locMap.panTo([lat, lng]);
-      locMapHint.classList.add('hidden');
+      locMapHint.textContent = 'Drag the pin to fine-tune';
       setLocation(lat, lng, label);
     }
 
@@ -706,9 +707,8 @@
       locCoordsText.textContent = label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
       locResult.classList.add('visible');
       locOpenMaps.href = `https://www.google.com/maps?q=${lat},${lng}`;
-      locOpenMaps.classList.add('visible');
       locGpsBtn.classList.remove('retry');
-      locGpsBtn.textContent = '📍  Update with my current location';
+      locGpsBtn.textContent = '📍 Update my location';
     }
 
     const locGpsError = document.getElementById('loc-gps-error');
@@ -717,11 +717,12 @@
       if (!navigator.geolocation) return;
       locGpsBtn.disabled = true;
       locGpsBtn.classList.remove('retry');
-      locGpsBtn.textContent = '⏳  Getting location…';
+      locGpsBtn.textContent = '⏳ Getting location…';
       locGpsError.style.display = 'none';
       navigator.geolocation.getCurrentPosition(
         pos => {
           locGpsBtn.disabled = false;
+          locGpsBtn.textContent = '📍 Update my location';
           const { latitude: lat, longitude: lng, accuracy } = pos.coords;
           placePin(lat, lng, `GPS · ±${Math.round(accuracy)}m`);
           locMap.setView([lat, lng], 17);
@@ -729,7 +730,7 @@
         err => {
           locGpsBtn.disabled = false;
           locGpsBtn.classList.add('retry');
-          locGpsBtn.textContent = '📍  Try again';
+          locGpsBtn.textContent = '📍 Try again';
           const messages = {
             1: 'Location permission blocked — enable it in your browser settings, or drop a pin on the map.',
             2: 'Could not determine your location. Try again, or drop a pin on the map.',
@@ -900,11 +901,11 @@
       otherInput.style.display = 'none';
       gpsCoords = null;
       locResult.classList.remove('visible');
-      locOpenMaps.classList.remove('visible');
       locGpsError.style.display = 'none';
-      locMapHint.classList.remove('hidden');
+      locMapHint.textContent = 'Tap the map to place a pin';
+      locMapWrap.classList.remove('pulse');
       locGpsBtn.classList.remove('retry');
-      locGpsBtn.textContent = '📍  Use my current location';
+      locGpsBtn.textContent = '📍 Use my location';
       locGpsBtn.disabled = false;
       if (locPin) { locPin.remove(); locPin = null; }
       if (locMap) locMap.setView([22.2852, 114.1503], 15);
