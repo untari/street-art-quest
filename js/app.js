@@ -20,6 +20,18 @@ let miniMapInstance = null;
 let userMarker = null;
 let userCircle = null;
 
+const PLAY_MODE_KEY = 'saq_play_mode';
+const PLAY_MODES = {
+  nearest: { icon: '📍', label: 'Nearest first' },
+  artist:  { icon: '🎨', label: 'By artist' },
+  type:    { icon: '🖼️', label: 'By type' },
+  shuffle: { icon: '🎲', label: 'Surprise me' },
+  default: { icon: '📋', label: 'List order' }
+};
+let playMode = localStorage.getItem(PLAY_MODE_KEY);
+let nearestOrigin = null;
+let shuffleOrderIds = null;
+
 // ─── Completion state ─────────────────────────────
 
 function getCompleted() {
@@ -119,12 +131,49 @@ function closePanel() {
 
 function openQuestPanel() {
   closePanel();
+  if (playMode === 'nearest' && !nearestOrigin) {
+    resolveNearestOrigin(renderQuestList);
+  } else if (playMode === 'shuffle' && !shuffleOrderIds) {
+    shuffleOrderIds = shuffleArray(allArtworks.map(a => a.id));
+  }
   renderQuestList();
   document.getElementById('quest-panel').classList.add('open');
+  if (!playMode) {
+    document.getElementById('play-mode-backdrop').classList.remove('hidden');
+  }
 }
 
 function closeQuestPanel() {
   document.getElementById('quest-panel').classList.remove('open');
+}
+
+function groupLabelFor(art) {
+  if (playMode === 'artist') return art.artist || 'Unknown';
+  if (playMode === 'type') return art.type;
+  return null;
+}
+
+function orderForPlayMode(list) {
+  if (playMode === 'nearest' && nearestOrigin) {
+    return [...list].sort((a, b) =>
+      getDistance(nearestOrigin.lat, nearestOrigin.lng, a.lat, a.lng) -
+      getDistance(nearestOrigin.lat, nearestOrigin.lng, b.lat, b.lng)
+    );
+  }
+  if (playMode === 'artist') {
+    return [...list].sort((a, b) => (a.artist || 'Unknown').localeCompare(b.artist || 'Unknown'));
+  }
+  if (playMode === 'type') {
+    return [...list].sort((a, b) => a.type.localeCompare(b.type));
+  }
+  if (playMode === 'shuffle' && shuffleOrderIds) {
+    const rank = id => {
+      const i = shuffleOrderIds.indexOf(id);
+      return i === -1 ? Infinity : i;
+    };
+    return [...list].sort((a, b) => rank(a.id) - rank(b.id));
+  }
+  return list;
 }
 
 function renderQuestList() {
@@ -132,12 +181,29 @@ function renderQuestList() {
   const list = document.getElementById('quest-list');
   list.innerHTML = '';
 
-  allArtworks.forEach((art, i) => {
+  const filtered = activeFilter === 'all'
+    ? allArtworks
+    : allArtworks.filter(a => a.type === activeFilter);
+
+  const ordered = orderForPlayMode(filtered);
+
+  let lastGroup = null;
+  ordered.forEach(art => {
+    const groupLabel = groupLabelFor(art);
+    if (groupLabel !== null && groupLabel !== lastGroup) {
+      const header = document.createElement('div');
+      header.className = 'quest-group-header';
+      header.textContent = groupLabel;
+      list.appendChild(header);
+      lastGroup = groupLabel;
+    }
+
+    const num = allArtworks.indexOf(art) + 1;
     const done = completed.includes(art.id);
     const item = document.createElement('div');
     item.className = `quest-item${done ? ' completed' : ''}`;
     item.innerHTML = `
-      <div class="quest-item-num">${done ? '✓' : (i + 1)}</div>
+      <div class="quest-item-num">${done ? '✓' : num}</div>
       <div class="quest-item-info">
         <div class="quest-item-type">${art.type}</div>
         <div class="quest-item-area">${art.address.split(',')[0]}</div>
@@ -151,6 +217,70 @@ function renderQuestList() {
   const score = document.getElementById('quest-panel-score');
   if (score) score.textContent = `${completed.length} / ${allArtworks.length}`;
   updateNavScore();
+}
+
+// ─── Play mode ────────────────────────────────────
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function resolveNearestOrigin(callback) {
+  if (userMarker) {
+    const ll = userMarker.getLatLng();
+    nearestOrigin = { lat: ll.lat, lng: ll.lng };
+    callback();
+    return;
+  }
+  if (!navigator.geolocation) { callback(); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      nearestOrigin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      callback();
+    },
+    () => callback(),
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+function updatePlayModePill() {
+  const pill = document.getElementById('play-mode-pill');
+  if (!pill) return;
+  const mode = playMode && PLAY_MODES[playMode] ? playMode : 'default';
+  const { icon, label } = PLAY_MODES[mode];
+  pill.textContent = `${icon} ${label}`;
+}
+
+function setPlayMode(mode) {
+  playMode = mode;
+  localStorage.setItem(PLAY_MODE_KEY, mode);
+  document.getElementById('play-mode-backdrop').classList.add('hidden');
+  updatePlayModePill();
+
+  if (mode === 'nearest') {
+    resolveNearestOrigin(renderQuestList);
+  } else if (mode === 'shuffle') {
+    shuffleOrderIds = shuffleArray(allArtworks.map(a => a.id));
+    renderQuestList();
+  } else {
+    renderQuestList();
+  }
+}
+
+function initPlayMode() {
+  document.querySelectorAll('.play-mode-option').forEach(btn => {
+    btn.addEventListener('click', () => setPlayMode(btn.dataset.mode));
+  });
+  document.getElementById('play-mode-skip').addEventListener('click', () => setPlayMode('default'));
+  document.getElementById('play-mode-pill').addEventListener('click', () => {
+    document.getElementById('play-mode-backdrop').classList.remove('hidden');
+  });
+  updatePlayModePill();
 }
 
 // ─── Quest card ───────────────────────────────────
@@ -314,6 +444,7 @@ function initFilters() {
       btn.classList.add('active');
       activeFilter = btn.dataset.type;
       renderMarkers();
+      renderQuestList();
       closePanel();
     };
   });
@@ -575,6 +706,7 @@ initFilters();
 renderMarkers();
 updateNavScore();
 initLocation();
+initPlayMode();
 const startTour = initTour();
 initMascot(startTour);
 initWelcome();

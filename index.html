@@ -41,6 +41,7 @@
       <span id="quest-panel-score" class="quest-panel-score">0 / 5</span>
       <button id="close-quest-panel" class="quest-panel-close">×</button>
     </div>
+    <button id="play-mode-pill" class="play-mode-pill">📋 List order</button>
     <div id="quest-list" class="quest-list"></div>
   </div>
 
@@ -98,6 +99,44 @@
       <button id="welcome-start" class="welcome-start">Start Hunting →</button>
       <button id="welcome-skip" class="welcome-skip">Skip</button>
       <p class="welcome-hint">Hit <strong>QUESTS</strong> anytime to see your checklist</p>
+    </div>
+  </div>
+
+  <div id="play-mode-backdrop" class="welcome-backdrop hidden">
+    <div class="welcome-card">
+      <div class="welcome-logo">HOW DO YOU <span>WANT TO PLAY?</span></div>
+      <p class="welcome-city">Choose how your quest list is sorted</p>
+      <div class="play-mode-list">
+        <button class="play-mode-option" data-mode="nearest">
+          <span class="play-mode-option-icon">📍</span>
+          <span class="play-mode-option-text">
+            <strong>Nearest first</strong>
+            Sort by distance from you
+          </span>
+        </button>
+        <button class="play-mode-option" data-mode="artist">
+          <span class="play-mode-option-icon">🎨</span>
+          <span class="play-mode-option-text">
+            <strong>By artist</strong>
+            Group quests under each artist
+          </span>
+        </button>
+        <button class="play-mode-option" data-mode="type">
+          <span class="play-mode-option-icon">🖼️</span>
+          <span class="play-mode-option-text">
+            <strong>By type</strong>
+            Group by Mural, Sticker…
+          </span>
+        </button>
+        <button class="play-mode-option" data-mode="shuffle">
+          <span class="play-mode-option-icon">🎲</span>
+          <span class="play-mode-option-text">
+            <strong>Surprise me</strong>
+            Shuffled order
+          </span>
+        </button>
+      </div>
+      <button id="play-mode-skip" class="welcome-skip">Skip — keep list order</button>
     </div>
   </div>
 

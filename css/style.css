@@ -370,6 +370,28 @@ header {
 
 .quest-panel-close:hover { background: rgba(0,0,0,0.15); }
 
+.play-mode-pill {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  align-self: center;
+  margin: 12px 20px; padding: 8px 16px;
+  border-radius: 20px; border: none;
+  background: var(--teal); color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer; white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(46,196,182,0.35);
+  transition: transform 0.15s, opacity 0.15s, box-shadow 0.15s;
+}
+
+.play-mode-pill:hover { opacity: 0.85; transform: scale(1.05); }
+.play-mode-pill:active { transform: scale(0.97); }
+
+.quest-group-header {
+  padding: 14px 20px 6px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted);
+}
+
 .quest-list { overflow-y: auto; flex: 1; }
 
 .quest-item {
@@ -1021,6 +1043,31 @@ header {
 }
 
 .welcome-hint strong { color: var(--dark); }
+
+.play-mode-list {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 18px; text-align: left;
+}
+
+.play-mode-option {
+  display: flex; align-items: flex-start; gap: 14px;
+  width: 100%; padding: 12px 14px; border-radius: 14px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  cursor: pointer; text-align: left;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.play-mode-option:hover { border-color: var(--teal); background: rgba(46,196,182,0.06); transform: scale(1.01); }
+.play-mode-option:active { transform: scale(0.98); }
+
+.play-mode-option-icon { font-size: 22px; flex-shrink: 0; line-height: 1.2; }
+
+.play-mode-option-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+.play-mode-option-text strong {
+  display: block; color: var(--dark);
+  font-size: 14px; font-weight: 800; margin-bottom: 2px;
+}
 
 /* ─── QUEST BUTTON PULSE ─────────────────────── */
 @keyframes quest-pulse {
