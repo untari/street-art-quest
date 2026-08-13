@@ -32,6 +32,19 @@ let playMode = localStorage.getItem(PLAY_MODE_KEY);
 let nearestOrigin = null;
 let shuffleOrderIds = null;
 
+const PRECISION_KEY = 'saq_precision';
+const TYPE_COLORS = {
+  Mural: '#ff6b9d',
+  Sculpture: '#7c4dff',
+  'Paste-up': '#ff9f43',
+  Sticker: '#2ecc71',
+  Installation: '#3498db'
+};
+const ZONE_RADIUS_M = 180;
+let precision = localStorage.getItem(PRECISION_KEY) || 'exact';
+let searchQuery = '';
+let questPanelTab = 'quests';
+
 // ─── Completion state ─────────────────────────────
 
 function getCompleted() {
@@ -52,9 +65,9 @@ function isCompleted(id) {
 
 // ─── Markers ──────────────────────────────────────
 
-function makeMarker(art) {
+function makeMarker(art, isLocked) {
   const el = document.createElement('div');
-  el.className = `art-marker ${art.type}${isCompleted(art.id) ? ' found' : ''}`;
+  el.className = `art-marker ${art.type}${isCompleted(art.id) ? ' found' : ''}${isLocked ? ' locked' : ''}`;
 
   const marker = L.marker([art.lat, art.lng], {
     icon: L.divIcon({
@@ -66,8 +79,30 @@ function makeMarker(art) {
   });
 
   marker.artData = art;
-  marker.on('click', () => openPanel(art));
+  marker.on('click', () => isLocked ? openLockedPanel(art) : openPanel(art));
   return marker;
+}
+
+function makeZone(art, isLocked) {
+  const zone = L.circle([art.lat, art.lng], {
+    radius: ZONE_RADIUS_M,
+    color: isLocked ? '#999' : (TYPE_COLORS[art.type] || '#2d2d2d'),
+    fillColor: isLocked ? '#999' : (TYPE_COLORS[art.type] || '#2d2d2d'),
+    fillOpacity: isLocked ? 0.12 : 0.18,
+    opacity: isLocked ? 0.4 : 0.7,
+    weight: 2
+  });
+
+  zone.artData = art;
+  zone.on('click', () => isLocked ? openLockedPanel(art) : openPanel(art));
+  return zone;
+}
+
+function makeMarkerOrZone(art, isLocked) {
+  if (precision === 'approx' && !isCompleted(art.id)) {
+    return makeZone(art, isLocked);
+  }
+  return makeMarker(art, isLocked);
 }
 
 function renderMarkers() {
@@ -78,8 +113,10 @@ function renderMarkers() {
     ? allArtworks
     : allArtworks.filter(a => a.type === activeFilter);
 
+  const lockedSet = computeLockedSet(orderForPlayMode(filtered));
+
   filtered.forEach(art => {
-    const m = makeMarker(art);
+    const m = makeMarkerOrZone(art, lockedSet.has(art.id));
     m.addTo(map);
     markers.push(m);
   });
@@ -95,28 +132,40 @@ function openPanel(art) {
   const panel = document.getElementById('panel');
   const content = document.getElementById('panel-content');
 
+  const done = isCompleted(art.id);
+  const hideDetails = !done && precision === 'approx';
+
   const photoHTML = art.photo
     ? `<div class="panel-photo"><img src="${art.photo}" alt="${art.title}" /></div>`
     : `<div class="panel-photo-placeholder">No photo yet</div>`;
 
-  const foundBadge = isCompleted(art.id)
+  const foundBadge = done
     ? `<span class="panel-found-badge">FOUND ✓</span>`
     : '';
 
+  const bodyHTML = hideDetails
+    ? `
+      <div class="panel-hint">${art.hint}</div>
+      <div class="panel-address">Somewhere within ${ZONE_RADIUS_M}m of this zone</div>
+    `
+    : `
+      <div class="panel-title">${art.title}</div>
+      <div class="panel-artist">
+        <strong>${art.artist !== 'Unknown' ? art.artist : 'Unknown artist'}</strong>
+      </div>
+      <div class="panel-address">${art.address}</div>
+    `;
+
   content.innerHTML = `
     <div class="panel-color-bar ${art.type}"></div>
-    ${photoHTML}
+    ${hideDetails ? '' : photoHTML}
     <div class="panel-body">
       <div class="panel-type-row">
         <span class="panel-type ${art.type}">${art.type}</span>
         <span class="panel-commissioned">${art.commissioned ? '✓ Commissioned' : '○ Unsanctioned'}</span>
         ${foundBadge}
       </div>
-      <div class="panel-title">${art.title}</div>
-      <div class="panel-artist">
-        <strong>${art.artist !== 'Unknown' ? art.artist : 'Unknown artist'}</strong>
-      </div>
-      <div class="panel-address">${art.address}</div>
+      ${bodyHTML}
     </div>
   `;
 
@@ -127,16 +176,41 @@ function closePanel() {
   document.getElementById('panel').classList.remove('open');
 }
 
+function openLockedPanel(art) {
+  closeQuestPanel();
+  const panel = document.getElementById('panel');
+  const content = document.getElementById('panel-content');
+
+  const nudge = playMode === 'artist'
+    ? `Find ${art.artist !== 'Unknown' ? art.artist + "'s" : 'this artist’s'} other piece first`
+    : playMode === 'type'
+      ? `Find another ${art.type} quest first`
+      : 'Find your current quest first';
+
+  content.innerHTML = `
+    <div class="panel-color-bar ${art.type}"></div>
+    <div class="panel-body">
+      <div class="panel-locked-message">
+        <div class="panel-locked-icon">🔒</div>
+        <div class="panel-locked-title">Locked</div>
+        <div class="panel-locked-text">${nudge}</div>
+      </div>
+    </div>
+  `;
+
+  panel.classList.add('open');
+}
+
 // ─── Quest panel ──────────────────────────────────
 
 function openQuestPanel() {
   closePanel();
-  if (playMode === 'nearest' && !nearestOrigin) {
-    resolveNearestOrigin(renderQuestList);
+  if ((playMode === 'nearest' || playMode === 'artist' || playMode === 'type') && !nearestOrigin) {
+    resolveNearestOrigin(refreshQuestUI);
   } else if (playMode === 'shuffle' && !shuffleOrderIds) {
     shuffleOrderIds = shuffleArray(allArtworks.map(a => a.id));
   }
-  renderQuestList();
+  renderQuestPanelBody();
   document.getElementById('quest-panel').classList.add('open');
   if (!playMode) {
     document.getElementById('play-mode-backdrop').classList.remove('hidden');
@@ -160,11 +234,16 @@ function orderForPlayMode(list) {
       getDistance(nearestOrigin.lat, nearestOrigin.lng, b.lat, b.lng)
     );
   }
-  if (playMode === 'artist') {
-    return [...list].sort((a, b) => (a.artist || 'Unknown').localeCompare(b.artist || 'Unknown'));
-  }
-  if (playMode === 'type') {
-    return [...list].sort((a, b) => a.type.localeCompare(b.type));
+  if (playMode === 'artist' || playMode === 'type') {
+    return [...list].sort((a, b) => {
+      const groupCompare = groupLabelFor(a).localeCompare(groupLabelFor(b));
+      if (groupCompare !== 0) return groupCompare;
+      if (nearestOrigin) {
+        return getDistance(nearestOrigin.lat, nearestOrigin.lng, a.lat, a.lng) -
+               getDistance(nearestOrigin.lat, nearestOrigin.lng, b.lat, b.lng);
+      }
+      return 0;
+    });
   }
   if (playMode === 'shuffle' && shuffleOrderIds) {
     const rank = id => {
@@ -174,6 +253,29 @@ function orderForPlayMode(list) {
     return [...list].sort((a, b) => rank(a.id) - rank(b.id));
   }
   return list;
+}
+
+function lockGroupFor(art) {
+  const label = groupLabelFor(art);
+  return label !== null ? label : '__all__';
+}
+
+function computeLockedSet(ordered) {
+  const locked = new Set();
+  const completed = new Set(getCompleted());
+  const unlockedGroups = new Set();
+
+  ordered.forEach(art => {
+    if (completed.has(art.id)) return;
+    const group = lockGroupFor(art);
+    if (!unlockedGroups.has(group)) {
+      unlockedGroups.add(group);
+    } else {
+      locked.add(art.id);
+    }
+  });
+
+  return locked;
 }
 
 function renderQuestList() {
@@ -186,9 +288,24 @@ function renderQuestList() {
     : allArtworks.filter(a => a.type === activeFilter);
 
   const ordered = orderForPlayMode(filtered);
+  const locked = computeLockedSet(ordered);
+
+  const visible = searchQuery
+    ? ordered.filter(art =>
+        (art.artist || '').toLowerCase().includes(searchQuery) ||
+        art.type.toLowerCase().includes(searchQuery)
+      )
+    : ordered;
+
+  if (searchQuery && visible.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'quest-no-results';
+    empty.textContent = `No quests match "${searchQuery}"`;
+    list.appendChild(empty);
+  }
 
   let lastGroup = null;
-  ordered.forEach(art => {
+  visible.forEach(art => {
     const groupLabel = groupLabelFor(art);
     if (groupLabel !== null && groupLabel !== lastGroup) {
       const header = document.createElement('div');
@@ -200,23 +317,98 @@ function renderQuestList() {
 
     const num = allArtworks.indexOf(art) + 1;
     const done = completed.includes(art.id);
+    const isLocked = locked.has(art.id);
     const item = document.createElement('div');
-    item.className = `quest-item${done ? ' completed' : ''}`;
+    item.className = `quest-item${done ? ' completed' : ''}${isLocked ? ' locked' : ''}`;
     item.innerHTML = `
       <div class="quest-item-num">${done ? '✓' : num}</div>
       <div class="quest-item-info">
         <div class="quest-item-type">${art.type}</div>
         <div class="quest-item-area">${art.address.split(',')[0]}</div>
       </div>
-      ${done ? '<div class="quest-item-done-label">Found</div>' : '<div class="quest-item-arrow">→</div>'}
+      ${done
+        ? '<div class="quest-item-done-label">Found</div>'
+        : isLocked
+          ? '<div class="quest-item-lock">🔒</div>'
+          : '<div class="quest-item-arrow">→</div>'
+      }
     `;
-    item.addEventListener('click', () => openQuestCard(art));
+    if (isLocked) {
+      item.title = (playMode === 'artist' || playMode === 'type')
+        ? 'Find the previous quest in this group first'
+        : 'Find your current quest first';
+    } else {
+      item.addEventListener('click', () => openQuestCard(art));
+    }
     list.appendChild(item);
   });
+}
 
+function renderGallery() {
+  const list = document.getElementById('quest-list');
+  list.innerHTML = '';
+
+  const found = allArtworks.filter(a => isCompleted(a.id));
+
+  if (!found.length) {
+    const empty = document.createElement('div');
+    empty.className = 'quest-no-results';
+    empty.textContent = 'Nothing found yet — go hunt!';
+    list.appendChild(empty);
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'gallery-grid';
+  found.forEach(art => {
+    const card = document.createElement('div');
+    card.className = 'gallery-card';
+    card.innerHTML = `
+      <div class="gallery-card-thumb ${art.type}">${art.photo ? `<img src="${art.photo}" alt="${art.title}">` : '✓'}</div>
+      <div class="gallery-card-title">${art.title}</div>
+      <div class="gallery-card-artist">${art.artist}</div>
+    `;
+    card.addEventListener('click', () => openQuestCard(art));
+    grid.appendChild(card);
+  });
+  list.appendChild(grid);
+}
+
+function updateQuestScore() {
+  const completed = getCompleted();
   const score = document.getElementById('quest-panel-score');
   if (score) score.textContent = `${completed.length} / ${allArtworks.length}`;
   updateNavScore();
+}
+
+function renderQuestPanelBody() {
+  document.getElementById('play-mode-pill').classList.toggle('hidden', questPanelTab === 'gallery');
+  document.querySelector('.quest-search-row').classList.toggle('hidden', questPanelTab === 'gallery');
+
+  if (questPanelTab === 'gallery') {
+    renderGallery();
+  } else {
+    renderQuestList();
+  }
+  updateQuestScore();
+}
+
+function initGalleryToggle() {
+  const btn = document.getElementById('gallery-toggle');
+  const title = document.querySelector('.quest-panel-title');
+  btn.addEventListener('click', () => {
+    questPanelTab = questPanelTab === 'gallery' ? 'quests' : 'gallery';
+    if (questPanelTab === 'gallery') {
+      btn.textContent = '🎯';
+      btn.title = 'Back to quests';
+      title.textContent = 'GALLERY';
+    } else {
+      btn.textContent = '🖼️';
+      btn.title = 'View gallery';
+      title.textContent = 'QUESTS';
+    }
+    renderQuestPanelBody();
+  });
 }
 
 // ─── Play mode ────────────────────────────────────
@@ -256,6 +448,11 @@ function updatePlayModePill() {
   pill.textContent = `${icon} ${label}`;
 }
 
+function refreshQuestUI() {
+  renderQuestPanelBody();
+  renderMarkers();
+}
+
 function setPlayMode(mode) {
   playMode = mode;
   localStorage.setItem(PLAY_MODE_KEY, mode);
@@ -263,12 +460,15 @@ function setPlayMode(mode) {
   updatePlayModePill();
 
   if (mode === 'nearest') {
-    resolveNearestOrigin(renderQuestList);
+    resolveNearestOrigin(refreshQuestUI);
+  } else if (mode === 'artist' || mode === 'type') {
+    refreshQuestUI();
+    if (!nearestOrigin) resolveNearestOrigin(refreshQuestUI);
   } else if (mode === 'shuffle') {
     shuffleOrderIds = shuffleArray(allArtworks.map(a => a.id));
-    renderQuestList();
+    refreshQuestUI();
   } else {
-    renderQuestList();
+    refreshQuestUI();
   }
 }
 
@@ -283,6 +483,47 @@ function initPlayMode() {
   updatePlayModePill();
 }
 
+function setPrecision(mode) {
+  precision = mode;
+  localStorage.setItem(PRECISION_KEY, mode);
+  document.querySelectorAll('.precision-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.precision === mode);
+  });
+  renderMarkers();
+  if (activeQuest && !document.getElementById('quest-card').classList.contains('hidden')) {
+    openQuestCard(activeQuest);
+  }
+}
+
+function initPrecision() {
+  document.querySelectorAll('.precision-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.precision === precision);
+    btn.addEventListener('click', () => setPrecision(btn.dataset.precision));
+  });
+}
+
+// ─── Quest search ─────────────────────────────────
+
+function initSearch() {
+  const input = document.getElementById('quest-search');
+  const clearBtn = document.getElementById('quest-search-clear');
+  if (!input) return;
+
+  input.addEventListener('input', () => {
+    searchQuery = input.value.trim().toLowerCase();
+    clearBtn.classList.toggle('hidden', !searchQuery);
+    renderQuestPanelBody();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    searchQuery = '';
+    clearBtn.classList.add('hidden');
+    renderQuestPanelBody();
+    input.focus();
+  });
+}
+
 // ─── Quest card ───────────────────────────────────
 
 function openQuestCard(art) {
@@ -295,11 +536,20 @@ function openQuestCard(art) {
   const done = isCompleted(art.id);
   const content = document.getElementById('quest-card-content');
 
+  const showMiniMap = !done && !art.photo && precision === 'exact';
+
   const photoHTML = art.photo
     ? `<div class="quest-photo"><img src="${art.photo}" alt="Quest" /></div>`
     : done
       ? `<div class="quest-photo-placeholder">✓</div>`
-      : `<div id="quest-mini-map" class="quest-mini-map"></div>`;
+      : precision === 'approx'
+        ? `<div class="quest-zone-placeholder">
+             <div class="quest-zone-placeholder-icon">🌫️</div>
+             <div class="quest-zone-placeholder-text">Approximate zone — follow the hint</div>
+           </div>`
+        : `<div id="quest-mini-map" class="quest-mini-map"></div>`;
+
+  const nextQuest = done ? getNextUnlockedQuest() : null;
 
   content.innerHTML = `
     <div class="quest-card-header">
@@ -307,12 +557,17 @@ function openQuestCard(art) {
       ${done ? '<span class="quest-card-found-badge">FOUND ✓</span>' : ''}
     </div>
     ${photoHTML}
-    <div class="quest-card-hint">${art.hint}</div>
+    ${done ? '' : `<div class="quest-card-hint">${art.hint}</div>`}
     ${done
       ? `<div class="quest-revealed">
            <div class="quest-revealed-title">${art.title}</div>
            <div class="quest-revealed-artist">by ${art.artist}</div>
-         </div>`
+         </div>
+         <div class="quest-fun-fact"><strong>Fun fact</strong>${art.hint}</div>
+         ${nextQuest
+           ? `<button id="next-quest-btn" class="checkin-btn">→ Next: ${nextQuest.type} at ${nextQuest.address.split(',')[0]}</button>`
+           : `<div class="quest-all-done">🎉 Nothing else unlocked right now — nice work!</div>`
+         }`
       : `<button id="checkin-btn" class="checkin-btn">📍 I'm here — Check In</button>
          <div id="gps-status" class="gps-status"></div>`
     }
@@ -321,7 +576,7 @@ function openQuestCard(art) {
   document.getElementById('quest-card').classList.remove('hidden');
   document.getElementById('quest-backdrop').classList.remove('hidden');
 
-  if (!done && !art.photo) {
+  if (showMiniMap) {
     miniMapInstance = L.map('quest-mini-map', {
       center: [art.lat, art.lng],
       zoom: 17,
@@ -349,7 +604,35 @@ function openQuestCard(art) {
 
   if (!done) {
     document.getElementById('checkin-btn').addEventListener('click', attemptCheckin);
+  } else if (nextQuest) {
+    document.getElementById('next-quest-btn').addEventListener('click', () => openQuestCard(nextQuest));
   }
+}
+
+function getNextUnlockedQuest() {
+  const filtered = activeFilter === 'all'
+    ? allArtworks
+    : allArtworks.filter(a => a.type === activeFilter);
+  const ordered = orderForPlayMode(filtered);
+  const locked = computeLockedSet(ordered);
+  return ordered.find(a => !isCompleted(a.id) && !locked.has(a.id)) || null;
+}
+
+function celebrateFind() {
+  const card = document.getElementById('quest-card');
+  const layer = document.createElement('div');
+  layer.className = 'confetti-layer';
+  const emojis = ['🎉', '✨', '⭐', '🎊'];
+  for (let i = 0; i < 14; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'confetti-piece';
+    piece.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.animationDelay = `${Math.random() * 0.3}s`;
+    layer.appendChild(piece);
+  }
+  card.appendChild(layer);
+  setTimeout(() => layer.remove(), 1400);
 }
 
 function closeQuestCard() {
@@ -394,10 +677,13 @@ function attemptCheckin() {
       const radius = activeQuest.radius || 50;
 
       if (dist <= radius) {
-        markCompleted(activeQuest.id);
+        const found = activeQuest;
+        markCompleted(found.id);
         renderMarkers();
-        openQuestCard(activeQuest);
-        renderQuestList();
+        openQuestCard(found);
+        celebrateFind();
+        mascotSay('Nice find! 🎉', `That's one more ${found.type} down.`);
+        renderQuestPanelBody();
       } else {
         btn.disabled = false;
         btn.textContent = "📍 I'm here — Check In";
@@ -444,7 +730,7 @@ function initFilters() {
       btn.classList.add('active');
       activeFilter = btn.dataset.type;
       renderMarkers();
-      renderQuestList();
+      renderQuestPanelBody();
       closePanel();
     };
   });
@@ -557,22 +843,24 @@ function initLocation() {
 
 // ─── Mascot ───────────────────────────────────────
 
+function mascotSay(title, text) {
+  document.getElementById('mascot-actions').classList.add('hidden');
+  document.getElementById('mascot-dismiss').classList.remove('hidden');
+  document.getElementById('mascot-title').textContent = title;
+  document.getElementById('mascot-text').textContent = text;
+  document.getElementById('mascot').classList.remove('hidden');
+}
+
 function initMascot(startTour) {
   const mascot = document.getElementById('mascot');
   const dismissBtn = document.getElementById('mascot-dismiss');
-  const actionsEl = document.getElementById('mascot-actions');
-  const titleEl = document.getElementById('mascot-title');
-  const textEl = document.getElementById('mascot-text');
 
   dismissBtn.addEventListener('click', () => {
     mascot.classList.add('hidden');
   });
 
   function showNormalState() {
-    actionsEl.classList.add('hidden');
-    dismissBtn.classList.remove('hidden');
-    titleEl.textContent = 'Welcome to Sheung Wan!';
-    textEl.textContent = 'Tap a dot on the map to start exploring.';
+    mascotSay('Welcome to Sheung Wan!', 'Tap a dot on the map to start exploring.');
   }
 
   if (startTour) {
@@ -707,6 +995,9 @@ renderMarkers();
 updateNavScore();
 initLocation();
 initPlayMode();
+initPrecision();
+initSearch();
+initGalleryToggle();
 const startTour = initTour();
 initMascot(startTour);
 initWelcome();

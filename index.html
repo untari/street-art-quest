@@ -39,9 +39,14 @@
     <div class="quest-panel-header">
       <span class="quest-panel-title">QUESTS</span>
       <span id="quest-panel-score" class="quest-panel-score">0 / 5</span>
+      <button id="gallery-toggle" class="quest-panel-icon-btn" title="View gallery" aria-label="View gallery">🖼️</button>
       <button id="close-quest-panel" class="quest-panel-close">×</button>
     </div>
     <button id="play-mode-pill" class="play-mode-pill">📋 List order</button>
+    <div class="quest-search-row">
+      <input type="text" id="quest-search" class="quest-search-input" placeholder="Search artist or type…" />
+      <button id="quest-search-clear" class="quest-search-clear hidden" aria-label="Clear search">×</button>
+    </div>
     <div id="quest-list" class="quest-list"></div>
   </div>
 
@@ -105,7 +110,9 @@
   <div id="play-mode-backdrop" class="welcome-backdrop hidden">
     <div class="welcome-card">
       <div class="welcome-logo">HOW DO YOU <span>WANT TO PLAY?</span></div>
-      <p class="welcome-city">Choose how your quest list is sorted</p>
+      <p class="welcome-city">Tune your hunt</p>
+
+      <div class="play-settings-heading">Sort quests by</div>
       <div class="play-mode-list">
         <button class="play-mode-option" data-mode="nearest">
           <span class="play-mode-option-icon">📍</span>
@@ -136,7 +143,14 @@
           </span>
         </button>
       </div>
-      <button id="play-mode-skip" class="welcome-skip">Skip — keep list order</button>
+
+      <div class="play-settings-heading">Challenge level</div>
+      <div class="precision-toggle-row">
+        <button class="precision-option" data-precision="exact">🎯 Exact pin</button>
+        <button class="precision-option" data-precision="approx">🌫️ Approx. zone</button>
+      </div>
+
+      <button id="play-mode-skip" class="welcome-skip">Skip — keep defaults</button>
     </div>
   </div>
 
