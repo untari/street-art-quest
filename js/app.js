@@ -181,19 +181,13 @@ function openLockedPanel(art) {
   const panel = document.getElementById('panel');
   const content = document.getElementById('panel-content');
 
-  const nudge = playMode === 'artist'
-    ? `Find ${art.artist !== 'Unknown' ? art.artist + "'s" : 'this artist’s'} other piece first`
-    : playMode === 'type'
-      ? `Find another ${art.type} quest first`
-      : 'Find your current quest first';
-
   content.innerHTML = `
     <div class="panel-color-bar ${art.type}"></div>
     <div class="panel-body">
       <div class="panel-locked-message">
         <div class="panel-locked-icon">🔒</div>
         <div class="panel-locked-title">Locked</div>
-        <div class="panel-locked-text">${nudge}</div>
+        <div class="panel-locked-text">Find your current quest first</div>
       </div>
     </div>
   `;
@@ -255,21 +249,14 @@ function orderForPlayMode(list) {
   return list;
 }
 
-function lockGroupFor(art) {
-  const label = groupLabelFor(art);
-  return label !== null ? label : '__all__';
-}
-
 function computeLockedSet(ordered) {
   const locked = new Set();
-  const completed = new Set(getCompleted());
-  const unlockedGroups = new Set();
+  let unlockedAssigned = false;
 
   ordered.forEach(art => {
-    if (completed.has(art.id)) return;
-    const group = lockGroupFor(art);
-    if (!unlockedGroups.has(group)) {
-      unlockedGroups.add(group);
+    if (isCompleted(art.id)) return;
+    if (!unlockedAssigned) {
+      unlockedAssigned = true;
     } else {
       locked.add(art.id);
     }
@@ -334,9 +321,7 @@ function renderQuestList() {
       }
     `;
     if (isLocked) {
-      item.title = (playMode === 'artist' || playMode === 'type')
-        ? 'Find the previous quest in this group first'
-        : 'Find your current quest first';
+      item.title = 'Find your current quest first';
     } else {
       item.addEventListener('click', () => openQuestCard(art));
     }
@@ -859,21 +844,14 @@ function initMascot(startTour) {
     mascot.classList.add('hidden');
   });
 
-  function showNormalState() {
-    mascotSay('Welcome to Sheung Wan!', 'Tap a dot on the map to start exploring.');
-  }
-
   if (startTour) {
-    document.getElementById('mascot-walkthrough').addEventListener('click', () => {
-      showNormalState();
-      startTour();
-    });
+    document.getElementById('mascot-walkthrough').addEventListener('click', startTour);
     document.getElementById('mascot-skip').addEventListener('click', () => {
       localStorage.setItem(TOUR_KEY, '1');
-      showNormalState();
+      mascot.classList.add('hidden');
     });
   } else {
-    showNormalState();
+    mascot.classList.add('hidden');
   }
 }
 
@@ -899,7 +877,11 @@ function initWelcome() {
 
 function handleQuestsClick() {
   document.getElementById('open-quests').classList.remove('pulsing');
-  document.getElementById('welcome-backdrop').classList.remove('hidden');
+  if (localStorage.getItem(WELCOME_KEY)) {
+    openQuestPanel();
+  } else {
+    document.getElementById('welcome-backdrop').classList.remove('hidden');
+  }
 }
 
 // ─── Guided tour ──────────────────────────────────
@@ -973,7 +955,6 @@ function initTour() {
     overlay.classList.add('hidden');
     localStorage.setItem(TOUR_KEY, '1');
     window.removeEventListener('resize', positionStep);
-    mascot.classList.remove('hidden');
   }
 
   nextBtn.addEventListener('click', nextStep);
