@@ -65,9 +65,9 @@ function isCompleted(id) {
 
 // ─── Markers ──────────────────────────────────────
 
-function makeMarker(art, isLocked) {
+function makeMarker(art, isActive) {
   const el = document.createElement('div');
-  el.className = `art-marker ${art.type}${isCompleted(art.id) ? ' found' : ''}${isLocked ? ' locked' : ''}`;
+  el.className = `art-marker ${art.type}${isCompleted(art.id) ? ' found' : ''}${isActive ? ' active' : ''}`;
 
   const marker = L.marker([art.lat, art.lng], {
     icon: L.divIcon({
@@ -79,50 +79,53 @@ function makeMarker(art, isLocked) {
   });
 
   marker.artData = art;
-  marker.on('click', () => isLocked ? openLockedPanel(art) : openPanel(art));
+  marker.on('click', () => openPanel(art));
   return marker;
 }
 
-function makeZone(art, isLocked) {
+function makeZone(art) {
   const zone = L.circle([art.lat, art.lng], {
     radius: ZONE_RADIUS_M,
-    color: isLocked ? '#999' : (TYPE_COLORS[art.type] || '#2d2d2d'),
-    fillColor: isLocked ? '#999' : (TYPE_COLORS[art.type] || '#2d2d2d'),
-    fillOpacity: isLocked ? 0.12 : 0.18,
-    opacity: isLocked ? 0.4 : 0.7,
-    weight: 2
+    color: TYPE_COLORS[art.type] || '#2d2d2d',
+    fillColor: TYPE_COLORS[art.type] || '#2d2d2d',
+    fillOpacity: 0.18,
+    opacity: 0.7,
+    weight: 2,
+    className: 'zone-active'
   });
 
   zone.artData = art;
-  zone.on('click', () => isLocked ? openLockedPanel(art) : openPanel(art));
+  zone.on('click', () => openPanel(art));
   return zone;
 }
 
-function makeMarkerOrZone(art, isLocked) {
+function makeMarkerOrZone(art, isActive) {
   if (precision === 'approx' && !isCompleted(art.id)) {
-    return makeZone(art, isLocked);
+    return makeZone(art);
   }
-  return makeMarker(art, isLocked);
+  return makeMarker(art, isActive);
 }
 
 function renderMarkers() {
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  const filtered = activeFilter === 'all'
-    ? allArtworks
-    : allArtworks.filter(a => a.type === activeFilter);
+  const ordered = orderForPlayMode(allArtworks);
+  const lockedSet = computeLockedSet(ordered);
+  const activeQuest = ordered.find(a => !isCompleted(a.id) && !lockedSet.has(a.id)) || null;
 
-  const lockedSet = computeLockedSet(orderForPlayMode(filtered));
-
-  filtered.forEach(art => {
-    const m = makeMarkerOrZone(art, lockedSet.has(art.id));
+  allArtworks.forEach(art => {
+    const done = isCompleted(art.id);
+    const isActive = !!activeQuest && art.id === activeQuest.id;
+    if (!done && !isActive) return;
+    const m = makeMarkerOrZone(art, isActive);
     m.addTo(map);
     markers.push(m);
   });
 
+  const foundCount = getCompleted().length;
   document.getElementById('count').innerHTML =
-    `<strong>${filtered.length}</strong> artwork${filtered.length !== 1 ? 's' : ''} · Sheung Wan, HK`;
+    `<strong>${foundCount}</strong> of ${allArtworks.length} found · Sheung Wan, HK`;
 }
 
 // ─── Artwork panel ────────────────────────────────
@@ -174,25 +177,6 @@ function openPanel(art) {
 
 function closePanel() {
   document.getElementById('panel').classList.remove('open');
-}
-
-function openLockedPanel(art) {
-  closeQuestPanel();
-  const panel = document.getElementById('panel');
-  const content = document.getElementById('panel-content');
-
-  content.innerHTML = `
-    <div class="panel-color-bar ${art.type}"></div>
-    <div class="panel-body">
-      <div class="panel-locked-message">
-        <div class="panel-locked-icon">🔒</div>
-        <div class="panel-locked-title">Locked</div>
-        <div class="panel-locked-text">Find your current quest first</div>
-      </div>
-    </div>
-  `;
-
-  panel.classList.add('open');
 }
 
 // ─── Quest panel ──────────────────────────────────
@@ -270,12 +254,13 @@ function renderQuestList() {
   const list = document.getElementById('quest-list');
   list.innerHTML = '';
 
+  const locked = computeLockedSet(orderForPlayMode(allArtworks));
+
   const filtered = activeFilter === 'all'
     ? allArtworks
     : allArtworks.filter(a => a.type === activeFilter);
 
   const ordered = orderForPlayMode(filtered);
-  const locked = computeLockedSet(ordered);
 
   const visible = searchQuery
     ? ordered.filter(art =>
@@ -595,10 +580,7 @@ function openQuestCard(art) {
 }
 
 function getNextUnlockedQuest() {
-  const filtered = activeFilter === 'all'
-    ? allArtworks
-    : allArtworks.filter(a => a.type === activeFilter);
-  const ordered = orderForPlayMode(filtered);
+  const ordered = orderForPlayMode(allArtworks);
   const locked = computeLockedSet(ordered);
   return ordered.find(a => !isCompleted(a.id) && !locked.has(a.id)) || null;
 }

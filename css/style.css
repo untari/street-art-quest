@@ -178,9 +178,34 @@ header {
   border-color: var(--teal);
 }
 
-.art-marker.locked {
-  filter: grayscale(0.7);
-  opacity: 0.55;
+.art-marker.active {
+  position: relative;
+  transform: scale(1.3);
+}
+
+.art-marker.active::after {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: var(--teal);
+  opacity: 0.35;
+  z-index: -1;
+  animation: quest-active-pulse 1.8s ease-out infinite;
+}
+
+@keyframes quest-active-pulse {
+  0%   { transform: scale(0.6); opacity: 0.55; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.zone-active {
+  animation: zone-active-pulse 1.8s ease-out infinite;
+}
+
+@keyframes zone-active-pulse {
+  0%, 100% { fill-opacity: 0.18; }
+  50%      { fill-opacity: 0.3; }
 }
 
 /* ─── ARTWORK PANEL ───────────────────────────────── */
@@ -329,28 +354,6 @@ header {
   padding-top: 14px;
   border-top: 2px dashed var(--border);
   font-weight: 600;
-}
-
-.panel-locked-message {
-  text-align: center;
-  padding: 12px 0 4px;
-}
-
-.panel-locked-icon { font-size: 34px; margin-bottom: 10px; }
-
-.panel-locked-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 28px;
-  letter-spacing: 0.03em;
-  color: var(--dark);
-  margin-bottom: 6px;
-}
-
-.panel-locked-text {
-  font-size: 13px;
-  color: var(--muted);
-  font-weight: 600;
-  line-height: 1.5;
 }
 
 /* ─── QUEST PANEL (left) ─────────────────────────── */
