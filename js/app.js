@@ -893,7 +893,7 @@ function initMascot(startTour) {
   }
 }
 
-// ─── Welcome modal ────────────────────────────────
+// ─── Quest button first-open hint ─────────────────
 
 const WELCOME_KEY = 'saq_welcomed';
 
@@ -902,23 +902,11 @@ function initWelcome() {
   if (!localStorage.getItem(WELCOME_KEY)) {
     questBtn.classList.add('pulsing');
   }
-
-  function dismissWelcome() {
-    document.getElementById('welcome-backdrop').classList.add('hidden');
-    localStorage.setItem(WELCOME_KEY, '1');
-    openQuestPanel();
-  }
-
-  document.getElementById('welcome-start').addEventListener('click', dismissWelcome);
-  document.getElementById('welcome-skip').addEventListener('click', dismissWelcome);
 }
 
 function handleQuestsClick() {
   document.getElementById('open-quests').classList.remove('pulsing');
-  if (!localStorage.getItem(WELCOME_KEY)) {
-    document.getElementById('welcome-backdrop').classList.remove('hidden');
-    return;
-  }
+  localStorage.setItem(WELCOME_KEY, '1');
   if (document.getElementById('quest-panel').classList.contains('open')) {
     closeQuestPanel();
   } else {
