@@ -1,4 +1,5 @@
 const COMPLETED_KEY = 'saq_completed';
+const UNVERIFIED_KEY = 'saq_unverified';
 
 const map = L.map('map', {
   center: [22.2852, 114.1503],
@@ -17,6 +18,7 @@ let markers = [];
 let activeFilter = 'all';
 let activeQuest = null;
 let miniMapInstance = null;
+let questWatchId = null;
 let userMarker = null;
 let userCircle = null;
 
@@ -63,6 +65,22 @@ function isCompleted(id) {
   return getCompleted().includes(id);
 }
 
+function getUnverified() {
+  try { return JSON.parse(localStorage.getItem(UNVERIFIED_KEY)) || []; }
+  catch { return []; }
+}
+
+function markUnverified(id) {
+  const u = getUnverified();
+  if (!u.includes(id)) {
+    localStorage.setItem(UNVERIFIED_KEY, JSON.stringify([...u, id]));
+  }
+}
+
+function isUnverified(id) {
+  return getUnverified().includes(id);
+}
+
 // ─── Markers ──────────────────────────────────────
 
 function makeMarker(art, isActive) {
@@ -79,7 +97,7 @@ function makeMarker(art, isActive) {
   });
 
   marker.artData = art;
-  marker.on('click', () => openPanel(art));
+  marker.on('click', () => openQuestCard(art));
   return marker;
 }
 
@@ -95,7 +113,7 @@ function makeZone(art) {
   });
 
   zone.artData = art;
-  zone.on('click', () => openPanel(art));
+  zone.on('click', () => openQuestCard(art));
   return zone;
 }
 
@@ -129,51 +147,6 @@ function renderMarkers() {
 }
 
 // ─── Artwork panel ────────────────────────────────
-
-function openPanel(art) {
-  closeQuestPanel();
-  const panel = document.getElementById('panel');
-  const content = document.getElementById('panel-content');
-
-  const done = isCompleted(art.id);
-  const hideDetails = !done && precision === 'approx';
-
-  const photoHTML = art.photo
-    ? `<div class="panel-photo"><img src="${art.photo}" alt="${art.title}" /></div>`
-    : `<div class="panel-photo-placeholder">No photo yet</div>`;
-
-  const foundBadge = done
-    ? `<span class="panel-found-badge">FOUND ✓</span>`
-    : '';
-
-  const bodyHTML = hideDetails
-    ? `
-      <div class="panel-hint">${art.hint}</div>
-      <div class="panel-address">Somewhere within ${ZONE_RADIUS_M}m of this zone</div>
-    `
-    : `
-      <div class="panel-title">${art.title}</div>
-      <div class="panel-artist">
-        <strong>${art.artist !== 'Unknown' ? art.artist : 'Unknown artist'}</strong>
-      </div>
-      <div class="panel-address">${art.address}</div>
-    `;
-
-  content.innerHTML = `
-    <div class="panel-color-bar ${art.type}"></div>
-    ${hideDetails ? '' : photoHTML}
-    <div class="panel-body">
-      <div class="panel-type-row">
-        <span class="panel-type ${art.type}">${art.type}</span>
-        <span class="panel-commissioned">${art.commissioned ? '✓ Commissioned' : '○ Unsanctioned'}</span>
-        ${foundBadge}
-      </div>
-      ${bodyHTML}
-    </div>
-  `;
-
-  panel.classList.add('open');
-}
 
 function closePanel() {
   document.getElementById('panel').classList.remove('open');
@@ -501,6 +474,7 @@ function openQuestCard(art) {
     miniMapInstance.remove();
     miniMapInstance = null;
   }
+  stopProximityWatch();
 
   activeQuest = art;
   const done = isCompleted(art.id);
@@ -524,7 +498,7 @@ function openQuestCard(art) {
   content.innerHTML = `
     <div class="quest-card-header">
       <span class="quest-card-type ${art.type}">${art.type}</span>
-      ${done ? '<span class="quest-card-found-badge">FOUND ✓</span>' : ''}
+      ${done ? `<span class="quest-card-found-badge">FOUND ✓${isUnverified(art.id) ? ' <span class="unverified-tag">unverified</span>' : ''}</span>` : ''}
     </div>
     ${photoHTML}
     ${done ? '' : `<div class="quest-card-hint">${art.hint}</div>`}
@@ -538,13 +512,18 @@ function openQuestCard(art) {
            ? `<button id="next-quest-btn" class="checkin-btn">→ Next: ${nextQuest.type} at ${nextQuest.address.split(',')[0]}</button>`
            : `<div class="quest-all-done">🎉 Nothing else unlocked right now — nice work!</div>`
          }`
-      : `<button id="checkin-btn" class="checkin-btn">📍 I'm here — Check In</button>
+      : `<div id="quest-proximity" class="quest-proximity"></div>
+         <button id="checkin-btn" class="checkin-btn">📍 I'm here — Check In</button>
          <div id="gps-status" class="gps-status"></div>`
     }
   `;
 
   document.getElementById('quest-card').classList.remove('hidden');
   document.getElementById('quest-backdrop').classList.remove('hidden');
+
+  if (!done) {
+    startProximityWatch(art);
+  }
 
   if (showMiniMap) {
     miniMapInstance = L.map('quest-mini-map', {
@@ -607,6 +586,7 @@ function closeQuestCard() {
     miniMapInstance.remove();
     miniMapInstance = null;
   }
+  stopProximityWatch();
   document.getElementById('quest-card').classList.add('hidden');
   document.getElementById('quest-backdrop').classList.add('hidden');
   activeQuest = null;
@@ -623,12 +603,67 @@ function getDistance(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function completeQuest(art, { unverified } = {}) {
+  markCompleted(art.id);
+  if (unverified) markUnverified(art.id);
+  stopProximityWatch();
+  renderMarkers();
+  openQuestCard(art);
+  celebrateFind();
+  mascotSay('Nice find! 🎉', `That's one more ${art.type} down.`);
+  renderQuestPanelBody();
+}
+
+function manualCheckin(art) {
+  completeQuest(art, { unverified: true });
+}
+
+function offerManualCheckin(status, message) {
+  if (!status) return;
+  status.innerHTML = `${message} <button id="manual-checkin-btn" class="manual-checkin-btn">Check in anyway (unverified)</button>`;
+  document.getElementById('manual-checkin-btn').addEventListener('click', () => manualCheckin(activeQuest));
+}
+
+function stopProximityWatch() {
+  if (questWatchId !== null) {
+    navigator.geolocation.clearWatch(questWatchId);
+    questWatchId = null;
+  }
+}
+
+function formatProximity(dist, radius) {
+  if (dist <= radius) return '🎯 Right here — check in!';
+  if (precision === 'exact') return `📍 ~${Math.round(dist)}m away`;
+  if (dist <= radius * 3) return '🔥 Hot — you\'re close!';
+  if (dist <= radius * 8) return '😊 Warm — keep going';
+  return '🥶 Cold — you have a walk ahead';
+}
+
+function startProximityWatch(art) {
+  if (!navigator.geolocation) return;
+  const el = document.getElementById('quest-proximity');
+  if (el) el.textContent = '📡 Finding you…';
+
+  questWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      const dist = getDistance(pos.coords.latitude, pos.coords.longitude, art.lat, art.lng);
+      const liveEl = document.getElementById('quest-proximity');
+      if (liveEl) liveEl.textContent = formatProximity(dist, art.radius || 50);
+    },
+    () => {
+      const liveEl = document.getElementById('quest-proximity');
+      if (liveEl) liveEl.textContent = '';
+    },
+    { enableHighAccuracy: true, maximumAge: 5000 }
+  );
+}
+
 function attemptCheckin() {
   const status = document.getElementById('gps-status');
   const btn = document.getElementById('checkin-btn');
 
   if (!navigator.geolocation) {
-    status.textContent = 'GPS not available on this device.';
+    offerManualCheckin(status, 'GPS not available on this device.');
     return;
   }
 
@@ -644,13 +679,7 @@ function attemptCheckin() {
       const radius = activeQuest.radius || 50;
 
       if (dist <= radius) {
-        const found = activeQuest;
-        markCompleted(found.id);
-        renderMarkers();
-        openQuestCard(found);
-        celebrateFind();
-        mascotSay('Nice find! 🎉', `That's one more ${found.type} down.`);
-        renderQuestPanelBody();
+        completeQuest(activeQuest);
       } else {
         btn.disabled = false;
         btn.textContent = "📍 I'm here — Check In";
@@ -660,7 +689,7 @@ function attemptCheckin() {
     () => {
       btn.disabled = false;
       btn.textContent = "📍 I'm here — Check In";
-      if (status) status.textContent = 'Could not get your location. Try again.';
+      offerManualCheckin(status, 'Could not get your location.');
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );
@@ -871,7 +900,7 @@ function handleQuestsClick() {
 const TOUR_KEY = 'saq_tour_seen';
 
 const TOUR_STEPS = [
-  { selector: '#map', title: 'The map', text: 'Tap any coloured dot to see a hidden mural or street art piece nearby.' },
+  { selector: '#map', title: 'The map', text: 'That glowing dot is your current quest — tap it for a hint and to check in.' },
   { selector: '#filters', title: 'Filter by type', text: 'Narrow the map down to just the kinds of art you want to hunt.' },
   { selector: '#open-quests', title: 'Your quests', text: 'See your full checklist of artworks and track how many you’ve found.' },
   { selector: '.add-btn', title: 'Add art', text: 'Spotted a piece that’s not on the map yet? Submit it here.' },

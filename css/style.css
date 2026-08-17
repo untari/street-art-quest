@@ -685,6 +685,17 @@ header {
   font-weight: 600;
 }
 
+.quest-proximity {
+  margin: 0 20px 14px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--dark);
+}
+
 .checkin-btn {
   display: block;
   margin: 0 20px;
@@ -711,6 +722,28 @@ header {
   color: var(--muted);
   text-align: center;
   font-weight: 700;
+}
+
+.manual-checkin-btn {
+  display: block;
+  margin: 8px auto 0;
+  background: none;
+  border: none;
+  color: var(--teal);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.manual-checkin-btn:hover { opacity: 0.8; }
+
+.unverified-tag {
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .quest-revealed {
