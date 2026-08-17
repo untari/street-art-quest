@@ -119,6 +119,9 @@ header {
 
 .quest-nav-btn:hover { opacity: 0.8; transform: scale(1.05); }
 
+.quest-nav-btn.active { background: var(--teal); }
+.quest-nav-btn.active #quest-nav-score { background: var(--dark); }
+
 #quest-nav-score {
   background: var(--teal);
   color: #fff;
@@ -1292,6 +1295,55 @@ header {
 }
 
 .welcome-skip:hover { color: var(--dark); }
+
+.restart-hunt-row { text-align: center; }
+.restart-hunt-row.hidden { display: none; }
+.restart-hunt-btn.hidden { display: none; }
+.restart-confirm.hidden { display: none; }
+
+.restart-hunt-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.restart-hunt-btn:hover { color: var(--dark); }
+
+.restart-confirm {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.restart-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.restart-confirm-yes,
+.restart-confirm-cancel {
+  background: none;
+  border: none;
+  padding: 2px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.restart-confirm-yes { color: #e0575b; }
+.restart-confirm-yes:hover { text-decoration: underline; }
+
+.restart-confirm-cancel { color: var(--muted); }
+.restart-confirm-cancel:hover { color: var(--dark); }
 
 .welcome-hint {
   font-size: 11px;

@@ -135,15 +135,20 @@ function renderMarkers() {
   allArtworks.forEach(art => {
     const done = isCompleted(art.id);
     const isActive = !!activeQuest && art.id === activeQuest.id;
-    if (!done && !isActive) return;
+    if (!isActive) {
+      if (!done) return;
+      if (activeFilter !== 'all' && art.type !== activeFilter) return;
+    }
     const m = makeMarkerOrZone(art, isActive);
     m.addTo(map);
     markers.push(m);
   });
 
-  const foundCount = getCompleted().length;
+  const filtered = activeFilter === 'all' ? allArtworks : allArtworks.filter(a => a.type === activeFilter);
+  const foundCount = filtered.filter(a => isCompleted(a.id)).length;
+  const label = activeFilter === 'all' ? 'found' : `${activeFilter} quests found`;
   document.getElementById('count').innerHTML =
-    `<strong>${foundCount}</strong> of ${allArtworks.length} found · Sheung Wan, HK`;
+    `<strong>${foundCount}</strong> of ${filtered.length} ${label} · Sheung Wan, HK`;
 }
 
 // ─── Artwork panel ────────────────────────────────
@@ -163,13 +168,15 @@ function openQuestPanel() {
   }
   renderQuestPanelBody();
   document.getElementById('quest-panel').classList.add('open');
+  document.getElementById('open-quests').classList.add('active');
   if (!playMode) {
-    document.getElementById('play-mode-backdrop').classList.remove('hidden');
+    openPlayModeBackdrop();
   }
 }
 
 function closeQuestPanel() {
   document.getElementById('quest-panel').classList.remove('open');
+  document.getElementById('open-quests').classList.remove('active');
 }
 
 function groupLabelFor(art) {
@@ -227,13 +234,8 @@ function renderQuestList() {
   const list = document.getElementById('quest-list');
   list.innerHTML = '';
 
-  const locked = computeLockedSet(orderForPlayMode(allArtworks));
-
-  const filtered = activeFilter === 'all'
-    ? allArtworks
-    : allArtworks.filter(a => a.type === activeFilter);
-
-  const ordered = orderForPlayMode(filtered);
+  const ordered = orderForPlayMode(allArtworks);
+  const locked = computeLockedSet(ordered);
 
   const visible = searchQuery
     ? ordered.filter(art =>
@@ -396,6 +398,22 @@ function refreshQuestUI() {
   renderMarkers();
 }
 
+function openPlayModeBackdrop() {
+  document.getElementById('restart-hunt-row').classList.toggle('hidden', getCompleted().length === 0);
+  document.getElementById('restart-hunt-btn').classList.remove('hidden');
+  document.getElementById('restart-confirm').classList.add('hidden');
+  document.getElementById('play-mode-backdrop').classList.remove('hidden');
+}
+
+function resetProgress() {
+  localStorage.removeItem(COMPLETED_KEY);
+  localStorage.removeItem(UNVERIFIED_KEY);
+  closeQuestCard();
+  document.getElementById('play-mode-backdrop').classList.add('hidden');
+  renderMarkers();
+  renderQuestPanelBody();
+}
+
 function setPlayMode(mode) {
   playMode = mode;
   localStorage.setItem(PLAY_MODE_KEY, mode);
@@ -420,10 +438,20 @@ function initPlayMode() {
     btn.addEventListener('click', () => setPlayMode(btn.dataset.mode));
   });
   document.getElementById('play-mode-skip').addEventListener('click', () => setPlayMode('default'));
-  document.getElementById('play-mode-pill').addEventListener('click', () => {
-    document.getElementById('play-mode-backdrop').classList.remove('hidden');
-  });
+  document.getElementById('play-mode-pill').addEventListener('click', openPlayModeBackdrop);
   updatePlayModePill();
+}
+
+function initRestart() {
+  document.getElementById('restart-hunt-btn').addEventListener('click', () => {
+    document.getElementById('restart-hunt-btn').classList.add('hidden');
+    document.getElementById('restart-confirm').classList.remove('hidden');
+  });
+  document.getElementById('restart-confirm-cancel').addEventListener('click', () => {
+    document.getElementById('restart-confirm').classList.add('hidden');
+    document.getElementById('restart-hunt-btn').classList.remove('hidden');
+  });
+  document.getElementById('restart-confirm-yes').addEventListener('click', resetProgress);
 }
 
 function setPrecision(mode) {
@@ -726,7 +754,6 @@ function initFilters() {
       btn.classList.add('active');
       activeFilter = btn.dataset.type;
       renderMarkers();
-      renderQuestPanelBody();
       closePanel();
     };
   });
@@ -888,10 +915,14 @@ function initWelcome() {
 
 function handleQuestsClick() {
   document.getElementById('open-quests').classList.remove('pulsing');
-  if (localStorage.getItem(WELCOME_KEY)) {
-    openQuestPanel();
-  } else {
+  if (!localStorage.getItem(WELCOME_KEY)) {
     document.getElementById('welcome-backdrop').classList.remove('hidden');
+    return;
+  }
+  if (document.getElementById('quest-panel').classList.contains('open')) {
+    closeQuestPanel();
+  } else {
+    openQuestPanel();
   }
 }
 
@@ -901,7 +932,7 @@ const TOUR_KEY = 'saq_tour_seen';
 
 const TOUR_STEPS = [
   { selector: '#map', title: 'The map', text: 'That glowing dot is your current quest — tap it for a hint and to check in.' },
-  { selector: '#filters', title: 'Filter by type', text: 'Narrow the map down to just the kinds of art you want to hunt.' },
+  { selector: '#filters', title: 'Filter by type', text: 'Show just the kinds of art you\'ve found so far, and narrow your quest list.' },
   { selector: '#open-quests', title: 'Your quests', text: 'See your full checklist of artworks and track how many you’ve found.' },
   { selector: '.add-btn', title: 'Add art', text: 'Spotted a piece that’s not on the map yet? Submit it here.' },
   { selector: '#locate-btn', title: 'Find yourself', text: 'Tap to show your current location on the map.' }
@@ -987,6 +1018,7 @@ renderMarkers();
 updateNavScore();
 initLocation();
 initPlayMode();
+initRestart();
 initPrecision();
 initSearch();
 initGalleryToggle();
