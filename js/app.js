@@ -874,6 +874,10 @@ function mascotSay(title, text) {
   document.getElementById('mascot').classList.remove('hidden');
 }
 
+function mascotFirstQuestHint() {
+  mascotSay('Ready?', 'That highlighted dot is your first quest — get close and tap it to check in.');
+}
+
 function initMascot(startTour) {
   const mascot = document.getElementById('mascot');
   const dismissBtn = document.getElementById('mascot-dismiss');
@@ -886,7 +890,7 @@ function initMascot(startTour) {
     document.getElementById('mascot-walkthrough').addEventListener('click', startTour);
     document.getElementById('mascot-skip').addEventListener('click', () => {
       localStorage.setItem(TOUR_KEY, '1');
-      mascot.classList.add('hidden');
+      mascotFirstQuestHint();
     });
   } else {
     mascot.classList.add('hidden');
@@ -985,6 +989,7 @@ function initTour() {
     overlay.classList.add('hidden');
     localStorage.setItem(TOUR_KEY, '1');
     window.removeEventListener('resize', positionStep);
+    mascotFirstQuestHint();
   }
 
   nextBtn.addEventListener('click', nextStep);
