@@ -498,6 +498,7 @@ header {
 .quest-list { overflow-y: auto; flex: 1; }
 
 .quest-item {
+  position: relative;
   display: flex;
   align-items: center;
   padding: 16px 20px;
@@ -505,6 +506,38 @@ header {
   cursor: pointer;
   gap: 14px;
   transition: background 0.15s;
+}
+
+.quest-item.shake { animation: quest-item-shake 0.4s ease; }
+
+@keyframes quest-item-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px); }
+  40%      { transform: translateX(4px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(3px); }
+}
+
+.quest-item-lock-hint {
+  position: absolute;
+  left: 20px; right: 20px;
+  bottom: 4px;
+  background: var(--dark);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  z-index: 5;
+  animation: quest-item-hint-fade 1.6s ease forwards;
+}
+
+@keyframes quest-item-hint-fade {
+  0%   { opacity: 0; transform: translateY(4px); }
+  15%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 .quest-item:hover { background: var(--bg); }
@@ -792,12 +825,25 @@ header {
 
 .quest-all-done {
   margin: 18px 20px 0;
-  padding: 14px;
+  padding: 20px 14px;
   text-align: center;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  background: var(--bg);
+  border-radius: 12px;
+}
+
+.quest-all-done-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.03em;
+  color: var(--dark);
+  margin-bottom: 6px;
+}
+
+.quest-all-done-text {
+  font-size: 13px;
+  font-weight: 700;
   color: var(--muted);
+  line-height: 1.5;
 }
 
 .confetti-layer {

@@ -169,9 +169,6 @@ function openQuestPanel() {
   renderQuestPanelBody();
   document.getElementById('quest-panel').classList.add('open');
   document.getElementById('open-quests').classList.add('active');
-  if (!playMode) {
-    openPlayModeBackdrop();
-  }
 }
 
 function closeQuestPanel() {
@@ -229,6 +226,25 @@ function computeLockedSet(ordered) {
   return locked;
 }
 
+function flashLockedHint(item) {
+  const existing = item.querySelector('.quest-item-lock-hint');
+  if (existing) existing.remove();
+
+  const hint = document.createElement('div');
+  hint.className = 'quest-item-lock-hint';
+  hint.textContent = 'Find your current quest first';
+  item.appendChild(hint);
+
+  item.classList.remove('shake');
+  void item.offsetWidth;
+  item.classList.add('shake');
+
+  setTimeout(() => {
+    hint.remove();
+    item.classList.remove('shake');
+  }, 1600);
+}
+
 function renderQuestList() {
   const completed = getCompleted();
   const list = document.getElementById('quest-list');
@@ -281,7 +297,7 @@ function renderQuestList() {
       }
     `;
     if (isLocked) {
-      item.title = 'Find your current quest first';
+      item.addEventListener('click', () => flashLockedHint(item));
     } else {
       item.addEventListener('click', () => openQuestCard(art));
     }
@@ -538,7 +554,10 @@ function openQuestCard(art) {
          <div class="quest-fun-fact"><strong>Fun fact</strong>${art.hint}</div>
          ${nextQuest
            ? `<button id="next-quest-btn" class="checkin-btn">→ Next: ${nextQuest.type} at ${nextQuest.address.split(',')[0]}</button>`
-           : `<div class="quest-all-done">🎉 Nothing else unlocked right now — nice work!</div>`
+           : `<div class="quest-all-done">
+                <div class="quest-all-done-title">🏆 Hunt complete!</div>
+                <div class="quest-all-done-text">You found all ${allArtworks.length} pieces across Sheung Wan. Nice work!</div>
+              </div>`
          }`
       : `<div id="quest-proximity" class="quest-proximity"></div>
          <button id="checkin-btn" class="checkin-btn">📍 I'm here — Check In</button>
@@ -592,12 +611,13 @@ function getNextUnlockedQuest() {
   return ordered.find(a => !isCompleted(a.id) && !locked.has(a.id)) || null;
 }
 
-function celebrateFind() {
+function celebrateFind(big) {
   const card = document.getElementById('quest-card');
   const layer = document.createElement('div');
   layer.className = 'confetti-layer';
   const emojis = ['🎉', '✨', '⭐', '🎊'];
-  for (let i = 0; i < 14; i++) {
+  const count = big ? 32 : 14;
+  for (let i = 0; i < count; i++) {
     const piece = document.createElement('span');
     piece.className = 'confetti-piece';
     piece.textContent = emojis[Math.floor(Math.random() * emojis.length)];
@@ -637,8 +657,13 @@ function completeQuest(art, { unverified } = {}) {
   stopProximityWatch();
   renderMarkers();
   openQuestCard(art);
-  celebrateFind();
-  mascotSay('Nice find! 🎉', `That's one more ${art.type} down.`);
+  const allDone = getCompleted().length === allArtworks.length;
+  celebrateFind(allDone);
+  if (allDone) {
+    mascotSay('🏆 Hunt complete!', `You found all ${allArtworks.length} pieces — incredible work!`);
+  } else {
+    mascotSay('Nice find! 🎉', `That's one more ${art.type} down.`);
+  }
   renderQuestPanelBody();
 }
 
@@ -660,7 +685,7 @@ function stopProximityWatch() {
 }
 
 function formatProximity(dist, radius) {
-  if (dist <= radius) return '🎯 Right here — check in!';
+  if (dist <= radius) return "🎯 You're right here!";
   if (precision === 'exact') return `📍 ~${Math.round(dist)}m away`;
   if (dist <= radius * 3) return '🔥 Hot — you\'re close!';
   if (dist <= radius * 8) return '😊 Warm — keep going';
