@@ -732,6 +732,8 @@ header {
   color: var(--dark);
 }
 
+.quest-proximity:empty { display: none; }
+
 .checkin-btn {
   display: block;
   margin: 0 20px;

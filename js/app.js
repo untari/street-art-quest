@@ -693,22 +693,30 @@ function formatProximity(dist, radius) {
 }
 
 function startProximityWatch(art) {
-  if (!navigator.geolocation) return;
-  const el = document.getElementById('quest-proximity');
-  if (el) el.textContent = '📡 Finding you…';
+  if (!navigator.geolocation || !navigator.permissions || !navigator.permissions.query) return;
 
-  questWatchId = navigator.geolocation.watchPosition(
-    pos => {
-      const dist = getDistance(pos.coords.latitude, pos.coords.longitude, art.lat, art.lng);
-      const liveEl = document.getElementById('quest-proximity');
-      if (liveEl) liveEl.textContent = formatProximity(dist, art.radius || 50);
-    },
-    () => {
-      const liveEl = document.getElementById('quest-proximity');
-      if (liveEl) liveEl.textContent = '';
-    },
-    { enableHighAccuracy: true, maximumAge: 5000 }
-  );
+  // Only watch silently if permission is already granted — never prompt
+  // just from opening a quest card. The explicit "Check In" tap is the
+  // one place a fresh permission prompt is expected.
+  navigator.permissions.query({ name: 'geolocation' }).then(status => {
+    if (status.state !== 'granted' || questWatchId !== null) return;
+
+    const el = document.getElementById('quest-proximity');
+    if (el) el.textContent = '📡 Finding you…';
+
+    questWatchId = navigator.geolocation.watchPosition(
+      pos => {
+        const dist = getDistance(pos.coords.latitude, pos.coords.longitude, art.lat, art.lng);
+        const liveEl = document.getElementById('quest-proximity');
+        if (liveEl) liveEl.textContent = formatProximity(dist, art.radius || 50);
+      },
+      () => {
+        const liveEl = document.getElementById('quest-proximity');
+        if (liveEl) liveEl.textContent = '';
+      },
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+  }).catch(() => {});
 }
 
 function attemptCheckin() {
