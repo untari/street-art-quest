@@ -18,7 +18,6 @@ let markers = [];
 let activeFilter = 'all';
 let activeQuest = null;
 let miniMapInstance = null;
-let questWatchId = null;
 let userMarker = null;
 let userCircle = null;
 
@@ -161,9 +160,7 @@ function closePanel() {
 
 function openQuestPanel() {
   closePanel();
-  if ((playMode === 'nearest' || playMode === 'artist' || playMode === 'type') && !nearestOrigin) {
-    resolveNearestOrigin(refreshQuestUI);
-  } else if (playMode === 'shuffle' && !shuffleOrderIds) {
+  if (playMode === 'shuffle' && !shuffleOrderIds) {
     shuffleOrderIds = shuffleArray(allArtworks.map(a => a.id));
   }
   renderQuestPanelBody();
@@ -518,7 +515,6 @@ function openQuestCard(art) {
     miniMapInstance.remove();
     miniMapInstance = null;
   }
-  stopProximityWatch();
 
   activeQuest = art;
   const done = isCompleted(art.id);
@@ -559,18 +555,13 @@ function openQuestCard(art) {
                 <div class="quest-all-done-text">You found all ${allArtworks.length} pieces across Sheung Wan. Nice work!</div>
               </div>`
          }`
-      : `<div id="quest-proximity" class="quest-proximity"></div>
-         <button id="checkin-btn" class="checkin-btn">📍 I'm here — Check In</button>
+      : `<button id="checkin-btn" class="checkin-btn">📍 I'm here — Check In</button>
          <div id="gps-status" class="gps-status"></div>`
     }
   `;
 
   document.getElementById('quest-card').classList.remove('hidden');
   document.getElementById('quest-backdrop').classList.remove('hidden');
-
-  if (!done) {
-    startProximityWatch(art);
-  }
 
   if (showMiniMap) {
     miniMapInstance = L.map('quest-mini-map', {
@@ -634,7 +625,6 @@ function closeQuestCard() {
     miniMapInstance.remove();
     miniMapInstance = null;
   }
-  stopProximityWatch();
   document.getElementById('quest-card').classList.add('hidden');
   document.getElementById('quest-backdrop').classList.add('hidden');
   activeQuest = null;
@@ -654,7 +644,6 @@ function getDistance(lat1, lng1, lat2, lng2) {
 function completeQuest(art, { unverified } = {}) {
   markCompleted(art.id);
   if (unverified) markUnverified(art.id);
-  stopProximityWatch();
   renderMarkers();
   openQuestCard(art);
   const allDone = getCompleted().length === allArtworks.length;
@@ -675,48 +664,6 @@ function offerManualCheckin(status, message) {
   if (!status) return;
   status.innerHTML = `${message} <button id="manual-checkin-btn" class="manual-checkin-btn">Check in anyway (unverified)</button>`;
   document.getElementById('manual-checkin-btn').addEventListener('click', () => manualCheckin(activeQuest));
-}
-
-function stopProximityWatch() {
-  if (questWatchId !== null) {
-    navigator.geolocation.clearWatch(questWatchId);
-    questWatchId = null;
-  }
-}
-
-function formatProximity(dist, radius) {
-  if (dist <= radius) return "🎯 You're right here!";
-  if (precision === 'exact') return `📍 ~${Math.round(dist)}m away`;
-  if (dist <= radius * 3) return '🔥 Hot — you\'re close!';
-  if (dist <= radius * 8) return '😊 Warm — keep going';
-  return '🥶 Cold — you have a walk ahead';
-}
-
-function startProximityWatch(art) {
-  if (!navigator.geolocation || !navigator.permissions || !navigator.permissions.query) return;
-
-  // Only watch silently if permission is already granted — never prompt
-  // just from opening a quest card. The explicit "Check In" tap is the
-  // one place a fresh permission prompt is expected.
-  navigator.permissions.query({ name: 'geolocation' }).then(status => {
-    if (status.state !== 'granted' || questWatchId !== null) return;
-
-    const el = document.getElementById('quest-proximity');
-    if (el) el.textContent = '📡 Finding you…';
-
-    questWatchId = navigator.geolocation.watchPosition(
-      pos => {
-        const dist = getDistance(pos.coords.latitude, pos.coords.longitude, art.lat, art.lng);
-        const liveEl = document.getElementById('quest-proximity');
-        if (liveEl) liveEl.textContent = formatProximity(dist, art.radius || 50);
-      },
-      () => {
-        const liveEl = document.getElementById('quest-proximity');
-        if (liveEl) liveEl.textContent = '';
-      },
-      { enableHighAccuracy: true, maximumAge: 5000 }
-    );
-  }).catch(() => {});
 }
 
 function attemptCheckin() {

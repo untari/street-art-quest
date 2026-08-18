@@ -721,19 +721,6 @@ header {
   font-weight: 600;
 }
 
-.quest-proximity {
-  margin: 0 20px 14px;
-  padding: 10px 14px;
-  background: var(--bg);
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 800;
-  text-align: center;
-  color: var(--dark);
-}
-
-.quest-proximity:empty { display: none; }
-
 .checkin-btn {
   display: block;
   margin: 0 20px;
