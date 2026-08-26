@@ -721,6 +721,19 @@ header {
   font-weight: 600;
 }
 
+.quest-extra-hint {
+  margin: 0 20px 18px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.quest-extra-hint.hidden { display: none; }
+
 .checkin-btn {
   display: block;
   margin: 0 20px;
@@ -790,6 +803,62 @@ header {
   font-weight: 600;
   margin-top: 4px;
 }
+
+.quest-confirm-body {
+  padding: 0 20px;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.quest-confirm-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 34px;
+  letter-spacing: 0.05em;
+  color: var(--dark);
+  line-height: 1;
+}
+
+.quest-confirm-artist {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.quest-confirm-hint {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--dark);
+  font-weight: 600;
+  text-align: left;
+}
+
+.quest-confirm-question {
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.confirm-no-btn {
+  display: block;
+  margin: 10px auto 0;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.confirm-no-btn:hover { color: var(--dark); }
 
 .quest-fun-fact {
   margin: 16px 20px 0;
@@ -977,6 +1046,16 @@ header {
 }
 
 .count-bar strong { color: var(--teal); }
+
+.tracking-distance {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+  color: var(--teal);
+  font-weight: 800;
+}
+
+.tracking-distance.hidden { display: none; }
 
 /* ─── LEAFLET OVERRIDES ─────────────────────── */
 .leaflet-popup-content-wrapper { display: none; }

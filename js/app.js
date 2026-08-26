@@ -18,8 +18,10 @@ let markers = [];
 let activeFilter = 'all';
 let activeQuest = null;
 let miniMapInstance = null;
+let checkinFailCount = 0;
 let userMarker = null;
 let userCircle = null;
+let trackingLine = null;
 
 const PLAY_MODE_KEY = 'saq_play_mode';
 const PLAY_MODES = {
@@ -519,6 +521,7 @@ function openQuestCard(art) {
   activeQuest = art;
   const done = isCompleted(art.id);
   const content = document.getElementById('quest-card-content');
+  checkinFailCount = 0;
 
   const showMiniMap = !done && !art.photo && precision === 'exact';
 
@@ -541,7 +544,7 @@ function openQuestCard(art) {
       ${done ? `<span class="quest-card-found-badge">FOUND ✓${isUnverified(art.id) ? ' <span class="unverified-tag">unverified</span>' : ''}</span>` : ''}
     </div>
     ${photoHTML}
-    ${done ? '' : `<div class="quest-card-hint">${art.hint}</div>`}
+    ${done ? '' : `<div class="quest-card-hint">${art.hint}</div><div id="quest-extra-hint" class="quest-extra-hint hidden"></div>`}
     ${done
       ? `<div class="quest-revealed">
            <div class="quest-revealed-title">${art.title}</div>
@@ -641,13 +644,44 @@ function getDistance(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function playCheckinFeedback(big) {
+  if (navigator.vibrate) {
+    navigator.vibrate(big ? [40, 60, 40, 60, 120] : [40]);
+  }
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = big ? [523.25, 659.25, 783.99, 1046.5] : [659.25, 987.77];
+    const now = ctx.currentTime;
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = now + i * 0.09;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.2, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.4);
+    });
+    setTimeout(() => ctx.close(), (notes.length * 0.09 + 0.5) * 1000);
+  } catch {}
+}
+
 function completeQuest(art, { unverified } = {}) {
   markCompleted(art.id);
   if (unverified) markUnverified(art.id);
   renderMarkers();
+  if (userMarker) {
+    const ll = userMarker.getLatLng();
+    updateTrackingLine(ll.lat, ll.lng);
+  }
   openQuestCard(art);
   const allDone = getCompleted().length === allArtworks.length;
   celebrateFind(allDone);
+  playCheckinFeedback(allDone);
   if (allDone) {
     mascotSay('🏆 Hunt complete!', `You found all ${allArtworks.length} pieces — incredible work!`);
   } else {
@@ -657,13 +691,49 @@ function completeQuest(art, { unverified } = {}) {
 }
 
 function manualCheckin(art) {
-  completeQuest(art, { unverified: true });
+  showCheckinConfirm(art, { unverified: true });
+}
+
+function showCheckinConfirm(art, { unverified } = {}) {
+  activeQuest = art;
+  const content = document.getElementById('quest-card-content');
+
+  const photoHTML = art.photo
+    ? `<div class="quest-photo"><img src="${art.photo}" alt="${art.title}" /></div>`
+    : `<div class="quest-photo-placeholder">🖼️</div>`;
+
+  content.innerHTML = `
+    <div class="quest-card-header">
+      <span class="quest-card-type ${art.type}">${art.type}</span>
+    </div>
+    ${photoHTML}
+    <div class="quest-confirm-body">
+      <div class="quest-confirm-title">${art.title}</div>
+      <div class="quest-confirm-artist">by ${art.artist}</div>
+      <div class="quest-confirm-hint">${art.hint}</div>
+      <div class="quest-confirm-question">Does this match what you found?</div>
+    </div>
+    <button id="confirm-yes-btn" class="checkin-btn">✅ Yes, this is it!</button>
+    <button id="confirm-no-btn" class="confirm-no-btn">Not this one — keep looking</button>
+  `;
+
+  document.getElementById('confirm-yes-btn').addEventListener('click', () => completeQuest(art, { unverified }));
+  document.getElementById('confirm-no-btn').addEventListener('click', () => openQuestCard(art));
 }
 
 function offerManualCheckin(status, message) {
   if (!status) return;
   status.innerHTML = `${message} <button id="manual-checkin-btn" class="manual-checkin-btn">Check in anyway (unverified)</button>`;
   document.getElementById('manual-checkin-btn').addEventListener('click', () => manualCheckin(activeQuest));
+}
+
+function maybeShowExtraHint() {
+  if (checkinFailCount < 3 || precision !== 'approx' || !activeQuest) return;
+  const el = document.getElementById('quest-extra-hint');
+  if (el && el.classList.contains('hidden')) {
+    el.textContent = `Still stuck? It's around: ${activeQuest.address}`;
+    el.classList.remove('hidden');
+  }
 }
 
 function attemptCheckin() {
@@ -687,11 +757,14 @@ function attemptCheckin() {
       const radius = activeQuest.radius || 50;
 
       if (dist <= radius) {
-        completeQuest(activeQuest);
+        checkinFailCount = 0;
+        showCheckinConfirm(activeQuest);
       } else {
+        checkinFailCount++;
         btn.disabled = false;
         btn.textContent = "📍 I'm here — Check In";
         if (status) status.textContent = `You're about ${Math.round(dist)}m away. Get closer!`;
+        maybeShowExtraHint();
       }
     },
     () => {
@@ -781,6 +854,40 @@ async function loadApprovedSubmissions() {
 
 // ─── User location ────────────────────────────────
 
+function updateTrackingDistance(dist) {
+  const el = document.getElementById('tracking-distance');
+  if (!el) return;
+  if (dist == null) {
+    el.textContent = '';
+    el.classList.add('hidden');
+  } else {
+    el.textContent = `📍 ${Math.round(dist)}m to next quest`;
+    el.classList.remove('hidden');
+  }
+}
+
+function updateTrackingLine(lat, lng) {
+  const target = getNextUnlockedQuest();
+  if (!target) {
+    if (trackingLine) { map.removeLayer(trackingLine); trackingLine = null; }
+    updateTrackingDistance(null);
+    return;
+  }
+  const latlngs = [[lat, lng], [target.lat, target.lng]];
+  if (!trackingLine) {
+    trackingLine = L.polyline(latlngs, {
+      color: '#2ec4b6',
+      weight: 3,
+      opacity: 0.6,
+      dashArray: '6 8',
+      interactive: false
+    }).addTo(map);
+  } else {
+    trackingLine.setLatLngs(latlngs);
+  }
+  updateTrackingDistance(getDistance(lat, lng, target.lat, target.lng));
+}
+
 function initLocation() {
   const btn = document.getElementById('locate-btn');
   if (!btn) return;
@@ -835,6 +942,8 @@ function initLocation() {
           userCircle.setLatLng([lat, lng]);
           userCircle.setRadius(accuracy);
         }
+
+        updateTrackingLine(lat, lng);
       },
       () => {
         btn.classList.remove('locating');
