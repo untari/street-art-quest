@@ -202,15 +202,6 @@ header {
   100% { transform: scale(2.2); opacity: 0; }
 }
 
-.zone-active {
-  animation: zone-active-pulse 1.8s ease-out infinite;
-}
-
-@keyframes zone-active-pulse {
-  0%, 100% { fill-opacity: 0.18; }
-  50%      { fill-opacity: 0.3; }
-}
-
 /* ─── ARTWORK PANEL ───────────────────────────────── */
 .panel {
   position: fixed;

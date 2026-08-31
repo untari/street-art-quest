@@ -36,14 +36,6 @@ let nearestOrigin = null;
 let shuffleOrderIds = null;
 
 const PRECISION_KEY = 'saq_precision';
-const TYPE_COLORS = {
-  Mural: '#ff6b9d',
-  Sculpture: '#7c4dff',
-  'Paste-up': '#ff9f43',
-  Sticker: '#2ecc71',
-  Installation: '#3498db'
-};
-const ZONE_RADIUS_M = 180;
 let precision = localStorage.getItem(PRECISION_KEY) || 'exact';
 let searchQuery = '';
 let questPanelTab = 'quests';
@@ -102,29 +94,6 @@ function makeMarker(art, isActive) {
   return marker;
 }
 
-function makeZone(art) {
-  const zone = L.circle([art.lat, art.lng], {
-    radius: ZONE_RADIUS_M,
-    color: TYPE_COLORS[art.type] || '#2d2d2d',
-    fillColor: TYPE_COLORS[art.type] || '#2d2d2d',
-    fillOpacity: 0.18,
-    opacity: 0.7,
-    weight: 2,
-    className: 'zone-active'
-  });
-
-  zone.artData = art;
-  zone.on('click', () => openQuestCard(art));
-  return zone;
-}
-
-function makeMarkerOrZone(art, isActive) {
-  if (precision === 'approx' && !isCompleted(art.id)) {
-    return makeZone(art);
-  }
-  return makeMarker(art, isActive);
-}
-
 function renderMarkers() {
   markers.forEach(m => map.removeLayer(m));
   markers = [];
@@ -134,13 +103,9 @@ function renderMarkers() {
   const activeQuest = ordered.find(a => !isCompleted(a.id) && !lockedSet.has(a.id)) || null;
 
   allArtworks.forEach(art => {
-    const done = isCompleted(art.id);
+    if (activeFilter !== 'all' && art.type !== activeFilter) return;
     const isActive = !!activeQuest && art.id === activeQuest.id;
-    if (!isActive) {
-      if (!done) return;
-      if (activeFilter !== 'all' && art.type !== activeFilter) return;
-    }
-    const m = makeMarkerOrZone(art, isActive);
+    const m = makeMarker(art, isActive);
     m.addTo(map);
     markers.push(m);
   });
