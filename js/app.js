@@ -1,15 +1,26 @@
 const COMPLETED_KEY = 'saq_completed';
 const UNVERIFIED_KEY = 'saq_unverified';
 
+// Basemap tiles — MapTiler (free tier). Restrict the key to this site's
+// domain in the MapTiler dashboard. Swap the style name to taste:
+// voyager (the CARTO style you had) · positron (clean/light) ·
+// streets-v2 (Google-like) · bright-v2 · outdoor-v2 · toner-v2
+const MAPTILER_KEY = 'lBugL5cyxnh6To7COAfL';
+const MAPTILER_STYLE = 'voyager';
+const BASEMAP_URL = `https://api.maptiler.com/maps/${MAPTILER_STYLE}/256/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`;
+const BASEMAP_ATTRIB =
+  '<a href="https://www.maptiler.com/copyright/">&copy; MapTiler</a> ' +
+  '<a href="https://www.openstreetmap.org/copyright">&copy; OpenStreetMap contributors</a>';
+
 const map = L.map('map', {
   center: [22.2852, 114.1503],
   zoom: 15,
   zoomControl: true
 });
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-  subdomains: 'abcd',
+L.tileLayer(BASEMAP_URL, {
+  attribution: BASEMAP_ATTRIB,
+  crossOrigin: true,
   maxZoom: 20
 }).addTo(map);
 
@@ -768,8 +779,8 @@ function openQuestCard(art) {
       touchZoom: false,
       attributionControl: false
     });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd',
+    L.tileLayer(BASEMAP_URL, {
+      crossOrigin: true,
       maxZoom: 20
     }).addTo(miniMapInstance);
     L.circle([art.lat, art.lng], {
