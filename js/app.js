@@ -40,6 +40,33 @@ let precision = localStorage.getItem(PRECISION_KEY) || 'exact';
 let searchQuery = '';
 let questPanelTab = 'quests';
 
+const HUNT_MODE_KEY = 'saq_hunt_mode';
+// 'explore' = browse every artwork freely on the map and in the list
+// 'quest'   = one quest unlocked at a time; the rest stay locked until you check in
+let huntMode = localStorage.getItem(HUNT_MODE_KEY) || 'explore';
+
+const ARTIST_KEY = 'saq_artist';
+let activeArtist = localStorage.getItem(ARTIST_KEY) || null; // null = every artist
+
+function getActiveQuest() {
+  const ordered = orderForPlayMode(allArtworks);
+  return ordered.find(a => !isCompleted(a.id)) || null;
+}
+
+function isQuestVisible(art) {
+  if (huntMode !== 'quest') return true;
+  return isCompleted(art.id) || art.id === getActiveQuest()?.id;
+}
+
+// Type + artist filters only narrow the browsing view (explore mode).
+// Quest mode ignores them — isQuestVisible already shows just the live quest.
+function passesExploreFilters(art) {
+  if (huntMode === 'quest') return true;
+  if (activeFilter !== 'all' && art.type !== activeFilter) return false;
+  if (activeArtist && art.artist !== activeArtist) return false;
+  return true;
+}
+
 // ─── Completion state ─────────────────────────────
 
 function getCompleted() {
@@ -99,20 +126,22 @@ function renderMarkers() {
   markers = [];
 
   const ordered = orderForPlayMode(allArtworks);
-  const lockedSet = computeLockedSet(ordered);
-  const activeQuest = ordered.find(a => !isCompleted(a.id) && !lockedSet.has(a.id)) || null;
+  const activeQuest = ordered.find(a => !isCompleted(a.id)) || null;
 
   allArtworks.forEach(art => {
-    if (activeFilter !== 'all' && art.type !== activeFilter) return;
+    if (!passesExploreFilters(art)) return;
+    if (!isQuestVisible(art)) return;
     const isActive = !!activeQuest && art.id === activeQuest.id;
     const m = makeMarker(art, isActive);
     m.addTo(map);
     markers.push(m);
   });
 
-  const filtered = activeFilter === 'all' ? allArtworks : allArtworks.filter(a => a.type === activeFilter);
+  const filtered = allArtworks.filter(passesExploreFilters);
   const foundCount = filtered.filter(a => isCompleted(a.id)).length;
-  const label = activeFilter === 'all' ? 'found' : `${activeFilter} quests found`;
+  const label = activeArtist
+    ? `by ${activeArtist} found`
+    : activeFilter === 'all' ? 'found' : `${activeFilter} quests found`;
   document.getElementById('count').innerHTML =
     `<strong>${foundCount}</strong> of ${filtered.length} ${label} · Sheung Wan, HK`;
 }
@@ -141,6 +170,8 @@ function closeQuestPanel() {
 }
 
 function groupLabelFor(art) {
+  // already narrowed to one artist/type — no headers needed
+  if (activeArtist || activeFilter !== 'all') return null;
   if (playMode === 'artist') return art.artist || 'Unknown';
   if (playMode === 'type') return art.type;
   return null;
@@ -153,7 +184,7 @@ function orderForPlayMode(list) {
       getDistance(nearestOrigin.lat, nearestOrigin.lng, b.lat, b.lng)
     );
   }
-  if (playMode === 'artist' || playMode === 'type') {
+  if ((playMode === 'artist' || playMode === 'type') && !activeArtist && activeFilter === 'all') {
     return [...list].sort((a, b) => {
       const groupCompare = groupLabelFor(a).localeCompare(groupLabelFor(b));
       if (groupCompare !== 0) return groupCompare;
@@ -174,60 +205,26 @@ function orderForPlayMode(list) {
   return list;
 }
 
-function computeLockedSet(ordered) {
-  const locked = new Set();
-  let unlockedAssigned = false;
-
-  ordered.forEach(art => {
-    if (isCompleted(art.id)) return;
-    if (!unlockedAssigned) {
-      unlockedAssigned = true;
-    } else {
-      locked.add(art.id);
-    }
-  });
-
-  return locked;
-}
-
-function flashLockedHint(item) {
-  const existing = item.querySelector('.quest-item-lock-hint');
-  if (existing) existing.remove();
-
-  const hint = document.createElement('div');
-  hint.className = 'quest-item-lock-hint';
-  hint.textContent = 'Find your current quest first';
-  item.appendChild(hint);
-
-  item.classList.remove('shake');
-  void item.offsetWidth;
-  item.classList.add('shake');
-
-  setTimeout(() => {
-    hint.remove();
-    item.classList.remove('shake');
-  }, 1600);
-}
-
 function renderQuestList() {
   const completed = getCompleted();
   const list = document.getElementById('quest-list');
   list.innerHTML = '';
 
   const ordered = orderForPlayMode(allArtworks);
-  const locked = computeLockedSet(ordered);
 
-  const visible = searchQuery
-    ? ordered.filter(art =>
-        (art.artist || '').toLowerCase().includes(searchQuery) ||
-        art.type.toLowerCase().includes(searchQuery)
-      )
-    : ordered;
+  const visible = ordered
+    .filter(isQuestVisible)
+    .filter(passesExploreFilters)
+    .filter(art => !searchQuery || (art.artist || '').toLowerCase().includes(searchQuery));
 
-  if (searchQuery && visible.length === 0) {
+  if (visible.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'quest-no-results';
-    empty.textContent = `No quests match "${searchQuery}"`;
+    empty.textContent = searchQuery
+      ? `No quests match "${searchQuery}"`
+      : activeArtist
+        ? `No quests by ${activeArtist}`
+        : `No ${activeFilter} quests`;
     list.appendChild(empty);
   }
 
@@ -244,9 +241,8 @@ function renderQuestList() {
 
     const num = allArtworks.indexOf(art) + 1;
     const done = completed.includes(art.id);
-    const isLocked = locked.has(art.id);
     const item = document.createElement('div');
-    item.className = `quest-item${done ? ' completed' : ''}${isLocked ? ' locked' : ''}`;
+    item.className = `quest-item${done ? ' completed' : ''}`;
     item.innerHTML = `
       <div class="quest-item-num">${done ? '✓' : num}</div>
       <div class="quest-item-info">
@@ -255,25 +251,30 @@ function renderQuestList() {
       </div>
       ${done
         ? '<div class="quest-item-done-label">Found</div>'
-        : isLocked
-          ? '<div class="quest-item-lock">🔒</div>'
-          : '<div class="quest-item-arrow">→</div>'
+        : '<div class="quest-item-arrow">→</div>'
       }
     `;
-    if (isLocked) {
-      item.addEventListener('click', () => flashLockedHint(item));
-    } else {
-      item.addEventListener('click', () => openQuestCard(art));
-    }
+    item.addEventListener('click', () => openQuestCard(art));
     list.appendChild(item);
   });
+
+  if (huntMode === 'quest' && !searchQuery) {
+    const remaining =
+      allArtworks.filter(a => !isCompleted(a.id)).length - (getActiveQuest() ? 1 : 0);
+    if (remaining > 0) {
+      const locked = document.createElement('div');
+      locked.className = 'quest-locked-footer';
+      locked.textContent = `🔒 ${remaining} more quest${remaining > 1 ? 's' : ''} locked — check in here to unlock the next`;
+      list.appendChild(locked);
+    }
+  }
 }
 
 function renderGallery() {
   const list = document.getElementById('quest-list');
   list.innerHTML = '';
 
-  const found = allArtworks.filter(a => isCompleted(a.id));
+  const found = allArtworks.filter(a => isCompleted(a.id) && passesExploreFilters(a));
 
   if (!found.length) {
     const empty = document.createElement('div');
@@ -308,7 +309,9 @@ function updateQuestScore() {
 
 function renderQuestPanelBody() {
   document.getElementById('play-mode-pill').classList.toggle('hidden', questPanelTab === 'gallery');
-  document.querySelector('.quest-search-row').classList.toggle('hidden', questPanelTab === 'gallery');
+  document.querySelector('.quest-search-row').classList.toggle(
+    'hidden', questPanelTab === 'gallery' || huntMode === 'quest'
+  );
 
   if (questPanelTab === 'gallery') {
     renderGallery();
@@ -368,6 +371,14 @@ function resolveNearestOrigin(callback) {
 function updatePlayModePill() {
   const pill = document.getElementById('play-mode-pill');
   if (!pill) return;
+  if (activeArtist) {
+    pill.textContent = `🎨 ${activeArtist}`;
+    return;
+  }
+  if (activeFilter && activeFilter !== 'all') {
+    pill.textContent = `🖼️ ${activeFilter}`;
+    return;
+  }
   const mode = playMode && PLAY_MODES[playMode] ? playMode : 'default';
   const { icon, label } = PLAY_MODES[mode];
   pill.textContent = `${icon} ${label}`;
@@ -382,7 +393,28 @@ function openPlayModeBackdrop() {
   document.getElementById('restart-hunt-row').classList.toggle('hidden', getCompleted().length === 0);
   document.getElementById('restart-hunt-btn').classList.remove('hidden');
   document.getElementById('restart-confirm').classList.add('hidden');
+  closeArtistPicker();  // floating dropdowns always start collapsed
+  closeTypePicker();
+  syncPlayOptionState();
   document.getElementById('play-mode-backdrop').classList.remove('hidden');
+}
+
+// the sheet stays open while you tune every option — this is the only thing that closes it
+function closePlayModeBackdrop() {
+  closeArtistPicker();
+  closeTypePicker();
+  document.getElementById('play-mode-backdrop').classList.add('hidden');
+}
+
+function syncPlayOptionState() {
+  const typeActive = activeFilter && activeFilter !== 'all';
+  document.querySelectorAll('.play-mode-option').forEach(btn => {
+    let on;
+    if (btn.dataset.mode === 'artist') on = !!activeArtist;
+    else if (btn.dataset.mode === 'type') on = !!typeActive;
+    else on = !activeArtist && !typeActive && playMode === btn.dataset.mode;
+    btn.classList.toggle('active', on);
+  });
 }
 
 function resetProgress() {
@@ -397,8 +429,12 @@ function resetProgress() {
 function setPlayMode(mode) {
   playMode = mode;
   localStorage.setItem(PLAY_MODE_KEY, mode);
-  document.getElementById('play-mode-backdrop').classList.add('hidden');
+  clearActiveArtist();
+  clearActiveType();
+  closeArtistPicker();
+  closeTypePicker();
   updatePlayModePill();
+  syncPlayOptionState();
 
   if (mode === 'nearest') {
     resolveNearestOrigin(refreshQuestUI);
@@ -415,11 +451,199 @@ function setPlayMode(mode) {
 
 function initPlayMode() {
   document.querySelectorAll('.play-mode-option').forEach(btn => {
-    btn.addEventListener('click', () => setPlayMode(btn.dataset.mode));
+    btn.addEventListener('click', () => {
+      if (btn.dataset.mode === 'artist') { toggleArtistPicker(); return; }
+      if (btn.dataset.mode === 'type') { toggleTypePicker(); return; }
+      setPlayMode(btn.dataset.mode);
+    });
   });
-  document.getElementById('play-mode-skip').addEventListener('click', () => setPlayMode('default'));
+  document.getElementById('play-mode-done').addEventListener('click', closePlayModeBackdrop);
   document.getElementById('play-mode-pill').addEventListener('click', openPlayModeBackdrop);
+  // click the dimmed area outside the card to close
+  document.getElementById('play-mode-backdrop').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closePlayModeBackdrop();
+  });
+  initArtistPicker();
+  initTypePicker();
   updatePlayModePill();
+}
+
+// ─── Filter pickers (artist / type) ───────────────
+
+function clearActiveArtist() {
+  activeArtist = null;
+  localStorage.removeItem(ARTIST_KEY);
+}
+
+function clearActiveType() {
+  activeFilter = 'all';
+  syncFilterBar();
+}
+
+// keep the header type-filter bar's highlight in step with activeFilter
+function syncFilterBar() {
+  document.querySelectorAll('#filters .filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === activeFilter);
+  });
+}
+
+function toggleArtistPicker() {
+  const picker = document.getElementById('artist-picker');
+  const willShow = picker.classList.contains('hidden');
+  closeTypePicker();
+  picker.classList.toggle('hidden', !willShow);
+  if (willShow) {
+    buildArtistPicker();
+    document.getElementById('artist-picker-search').focus();
+  }
+}
+
+function buildArtistPicker() {
+  const listEl = document.getElementById('artist-picker-list');
+  const search = document.getElementById('artist-picker-search');
+  const q = (search.value || '').trim().toLowerCase();
+  const artists = [...new Set(allArtworks.map(a => a.artist).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b));
+
+  listEl.innerHTML = '';
+
+  const addItem = (label, value) => {
+    const b = document.createElement('button');
+    b.className = 'opt-picker-item' + (value === activeArtist ? ' active' : '');
+    b.textContent = label;
+    b.addEventListener('click', () => selectArtist(value));
+    listEl.appendChild(b);
+  };
+
+  if (!q) addItem('All artists', null);
+  artists
+    .filter(name => !q || name.toLowerCase().includes(q))
+    .forEach(name => addItem(name, name));
+
+  if (!listEl.children.length) {
+    const empty = document.createElement('div');
+    empty.className = 'opt-picker-empty';
+    empty.textContent = 'No artist matches';
+    listEl.appendChild(empty);
+  }
+}
+
+function selectArtist(name) {
+  activeArtist = name || null;
+  if (activeArtist) localStorage.setItem(ARTIST_KEY, activeArtist);
+  else localStorage.removeItem(ARTIST_KEY);
+  clearActiveType();
+
+  playMode = 'artist';
+  localStorage.setItem(PLAY_MODE_KEY, 'artist');
+
+  closeArtistPicker();
+  updatePlayModePill();
+  syncPlayOptionState();
+  refreshQuestUI();
+}
+
+function closeArtistPicker() {
+  const picker = document.getElementById('artist-picker');
+  if (picker) picker.classList.add('hidden');
+}
+
+function initArtistPicker() {
+  const search = document.getElementById('artist-picker-search');
+  if (search) search.addEventListener('input', buildArtistPicker);
+  initPickerOutsideClose('artist-picker', '.artist-option-wrap', closeArtistPicker);
+}
+
+// ─── Type picker ──────────────────────────────────
+
+function toggleTypePicker() {
+  const picker = document.getElementById('type-picker');
+  const willShow = picker.classList.contains('hidden');
+  closeArtistPicker();
+  picker.classList.toggle('hidden', !willShow);
+  if (willShow) buildTypePicker();
+}
+
+function buildTypePicker() {
+  const listEl = document.getElementById('type-picker-list');
+  const types = [...new Set(allArtworks.map(a => a.type).filter(Boolean))].sort();
+  listEl.innerHTML = '';
+
+  const addItem = (label, value) => {
+    const b = document.createElement('button');
+    b.className = 'opt-picker-item' + (value === activeFilter ? ' active' : '');
+    b.textContent = label;
+    b.addEventListener('click', () => selectType(value));
+    listEl.appendChild(b);
+  };
+
+  addItem('All types', 'all');
+  types.forEach(t => addItem(t, t));
+}
+
+function selectType(type) {
+  activeFilter = type || 'all';
+  clearActiveArtist();
+  syncFilterBar();
+
+  playMode = 'type';
+  localStorage.setItem(PLAY_MODE_KEY, 'type');
+
+  closeTypePicker();
+  updatePlayModePill();
+  syncPlayOptionState();
+  refreshQuestUI();
+}
+
+function closeTypePicker() {
+  const picker = document.getElementById('type-picker');
+  if (picker) picker.classList.add('hidden');
+}
+
+function initTypePicker() {
+  initPickerOutsideClose('type-picker', '.type-option-wrap', closeTypePicker);
+}
+
+// shared: click anywhere in the sheet outside this picker's wrap closes it
+function initPickerOutsideClose(pickerId, wrapSel, close) {
+  document.getElementById('play-mode-backdrop').addEventListener('click', e => {
+    const picker = document.getElementById(pickerId);
+    if (!picker || picker.classList.contains('hidden')) return;
+    if (e.target.closest(wrapSel)) return;
+    close();
+  });
+}
+
+function applyHuntMode() {
+  const filters = document.getElementById('filters');
+  if (filters) filters.classList.toggle('hidden', huntMode === 'quest');
+
+  if (huntMode === 'quest') {
+    clearActiveType();
+    clearActiveArtist();
+    updatePlayModePill();
+  }
+
+  document.querySelectorAll('.mode-option').forEach(b => {
+    b.classList.toggle('active', b.dataset.modeChoice === huntMode);
+  });
+}
+
+function setHuntMode(mode) {
+  huntMode = mode;
+  localStorage.setItem(HUNT_MODE_KEY, mode);
+  closeArtistPicker();
+  closeTypePicker();
+  applyHuntMode();
+  syncPlayOptionState();
+  refreshQuestUI();
+}
+
+function initHuntMode() {
+  document.querySelectorAll('.mode-option').forEach(btn => {
+    btn.addEventListener('click', () => setHuntMode(btn.dataset.modeChoice));
+  });
+  applyHuntMode();
 }
 
 function initRestart() {
@@ -501,7 +725,7 @@ function openQuestCard(art) {
            </div>`
         : `<div id="quest-mini-map" class="quest-mini-map"></div>`;
 
-  const nextQuest = done ? getNextUnlockedQuest() : null;
+  const nextQuest = done ? getNextQuest() : null;
 
   content.innerHTML = `
     <div class="quest-card-header">
@@ -564,10 +788,8 @@ function openQuestCard(art) {
   }
 }
 
-function getNextUnlockedQuest() {
-  const ordered = orderForPlayMode(allArtworks);
-  const locked = computeLockedSet(ordered);
-  return ordered.find(a => !isCompleted(a.id) && !locked.has(a.id)) || null;
+function getNextQuest() {
+  return getActiveQuest();
 }
 
 function celebrateFind(big) {
@@ -771,7 +993,10 @@ function initFilters() {
       container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       activeFilter = btn.dataset.type;
+      clearActiveArtist();
+      updatePlayModePill();
       renderMarkers();
+      renderQuestPanelBody();
       closePanel();
     };
   });
@@ -832,7 +1057,7 @@ function updateTrackingDistance(dist) {
 }
 
 function updateTrackingLine(lat, lng) {
-  const target = getNextUnlockedQuest();
+  const target = getNextQuest();
   if (!target) {
     if (trackingLine) { map.removeLayer(trackingLine); trackingLine = null; }
     updateTrackingDistance(null);
@@ -1061,6 +1286,7 @@ function initTour() {
 
 allArtworks = ARTWORKS;
 initFilters();
+initHuntMode();
 renderMarkers();
 updateNavScore();
 initLocation();

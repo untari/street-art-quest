@@ -44,7 +44,7 @@
     </div>
     <button id="play-mode-pill" class="play-mode-pill">📋 List order</button>
     <div class="quest-search-row">
-      <input type="text" id="quest-search" class="quest-search-input" placeholder="Search artist or type…" />
+      <input type="text" id="quest-search" class="quest-search-input" placeholder="Search by artist…" />
       <button id="quest-search-clear" class="quest-search-clear hidden" aria-label="Clear search">×</button>
     </div>
     <div id="quest-list" class="quest-list"></div>
@@ -80,6 +80,12 @@
       <div class="welcome-logo">HOW DO YOU <span>WANT TO PLAY?</span></div>
       <p class="welcome-city">Tune your hunt</p>
 
+      <div class="play-settings-heading">Play style</div>
+      <div class="precision-toggle-row">
+        <button class="mode-option" data-mode-choice="explore">🗺️ Explore</button>
+        <button class="mode-option" data-mode-choice="quest">🎯 Quest</button>
+      </div>
+
       <div class="play-settings-heading">Sort quests by</div>
       <div class="play-mode-list">
         <button class="play-mode-option" data-mode="nearest">
@@ -89,20 +95,31 @@
             Sort by distance from you
           </span>
         </button>
-        <button class="play-mode-option" data-mode="artist">
-          <span class="play-mode-option-icon">🎨</span>
-          <span class="play-mode-option-text">
-            <strong>By artist</strong>
-            Sort quests by artist name
-          </span>
-        </button>
-        <button class="play-mode-option" data-mode="type">
-          <span class="play-mode-option-icon">🖼️</span>
-          <span class="play-mode-option-text">
-            <strong>By type</strong>
-            Sort by type — Mural, Sticker…
-          </span>
-        </button>
+        <div class="artist-option-wrap opt-option-wrap">
+          <button class="play-mode-option" data-mode="artist">
+            <span class="play-mode-option-icon">🎨</span>
+            <span class="play-mode-option-text">
+              <strong>By artist</strong>
+              Pick one artist to focus on
+            </span>
+          </button>
+          <div id="artist-picker" class="opt-picker hidden">
+            <input type="text" id="artist-picker-search" class="opt-picker-search" placeholder="Search artist…" />
+            <div id="artist-picker-list" class="opt-picker-list"></div>
+          </div>
+        </div>
+        <div class="type-option-wrap opt-option-wrap">
+          <button class="play-mode-option" data-mode="type">
+            <span class="play-mode-option-icon">🖼️</span>
+            <span class="play-mode-option-text">
+              <strong>By type</strong>
+              Pick one type to focus on
+            </span>
+          </button>
+          <div id="type-picker" class="opt-picker hidden">
+            <div id="type-picker-list" class="opt-picker-list"></div>
+          </div>
+        </div>
         <button class="play-mode-option" data-mode="shuffle">
           <span class="play-mode-option-icon">🎲</span>
           <span class="play-mode-option-text">
@@ -118,7 +135,7 @@
         <button class="precision-option" data-precision="approx">🌫️ Approx. zone</button>
       </div>
 
-      <button id="play-mode-skip" class="welcome-skip">Skip — keep defaults</button>
+      <button id="play-mode-done" class="play-mode-done">Done</button>
 
       <div id="restart-hunt-row" class="restart-hunt-row hidden">
         <button id="restart-hunt-btn" class="restart-hunt-btn">🔄 Start a new hunt</button>
