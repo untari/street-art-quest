@@ -1165,7 +1165,7 @@ function mascotSay(title, text) {
 }
 
 function mascotFirstQuestHint() {
-  mascotSay('Ready?', 'That highlighted dot is your first quest — get close and tap it to check in.');
+  mascotSay('Ready?', 'Tap 📍 to see how far you are, then head to the glowing dot to check in.');
 }
 
 function initMascot(startTour) {
@@ -1177,8 +1177,12 @@ function initMascot(startTour) {
   });
 
   if (startTour) {
-    document.getElementById('mascot-walkthrough').addEventListener('click', startTour);
+    document.getElementById('mascot-walkthrough').addEventListener('click', () => {
+      clearWelcomePulse();
+      startTour();
+    });
     document.getElementById('mascot-skip').addEventListener('click', () => {
+      clearWelcomePulse();
       localStorage.setItem(TOUR_KEY, '1');
       mascotFirstQuestHint();
     });
@@ -1198,9 +1202,15 @@ function initWelcome() {
   }
 }
 
-function handleQuestsClick() {
+// stops the pulse the moment the user is pointed elsewhere (tour start/skip)
+// or opens the list directly — never leave two contradictory CTAs on screen
+function clearWelcomePulse() {
   document.getElementById('open-quests').classList.remove('pulsing');
   localStorage.setItem(WELCOME_KEY, '1');
+}
+
+function handleQuestsClick() {
+  clearWelcomePulse();
   if (document.getElementById('quest-panel').classList.contains('open')) {
     closeQuestPanel();
   } else {
@@ -1212,12 +1222,13 @@ function handleQuestsClick() {
 
 const TOUR_KEY = 'saq_tour_seen';
 
+// Core loop first (map → locate → quest list), secondary tools last (filters, add art)
 const TOUR_STEPS = [
   { selector: '#map', title: 'The map', text: 'That glowing dot is your current quest — tap it for a hint and to check in.' },
-  { selector: '#filters', title: 'Filter by type', text: 'Show just the kinds of art you\'ve found so far, and narrow your quest list.' },
+  { selector: '#locate-btn', title: 'Find yourself', text: 'Tap to show your position and see live distance to your next quest.' },
   { selector: '#open-quests', title: 'Your quests', text: 'See your full checklist of artworks and track how many you’ve found.' },
-  { selector: '.add-btn', title: 'Add art', text: 'Spotted a piece that’s not on the map yet? Submit it here.' },
-  { selector: '#locate-btn', title: 'Find yourself', text: 'Tap to show your current location on the map.' }
+  { selector: '#filters', title: 'Filter by type', text: 'Show just the kinds of art you\'ve found so far, and narrow your quest list.' },
+  { selector: '.add-btn', title: 'Add art', text: 'Spotted a piece that’s not on the map yet? Submit it here.' }
 ];
 
 function initTour() {
