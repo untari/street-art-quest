@@ -98,7 +98,11 @@ header {
 .filter-btn[data-type="Sticker"]      { background: var(--green); }
 .filter-btn[data-type="Installation"] { background: var(--blue); }
 
-/* ─── QUEST NAV BUTTON ──────────────────────────── */
+/* ─── QUEST NAV BUTTONS ─────────────────────────── */
+/* margin-left:auto (not .filters' flex:1) is what pins this to the right —
+   .filters gets display:none in quest mode, so it can't be relied on as the spacer */
+.quest-mode-nav { display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }
+
 .quest-nav-btn {
   background: var(--dark);
   color: #fff;
@@ -122,16 +126,6 @@ header {
 .quest-nav-btn:hover { opacity: 0.8; transform: scale(1.05); }
 
 .quest-nav-btn.active { background: var(--teal); }
-.quest-nav-btn.active #quest-nav-score { background: var(--dark); }
-
-#quest-nav-score {
-  background: var(--teal);
-  color: #fff;
-  border-radius: 10px;
-  padding: 1px 7px;
-  font-size: 10px;
-  font-weight: 900;
-}
 
 .add-btn {
   background: var(--teal);
@@ -420,7 +414,6 @@ header {
 .quest-panel-icon-btn:hover { background: rgba(0,0,0,0.15); }
 
 #play-mode-pill.hidden { display: none; }
-.quest-search-row.hidden { display: none; }
 
 .play-mode-pill {
   display: flex; align-items: center; justify-content: center; gap: 7px;
@@ -437,42 +430,6 @@ header {
 
 .play-mode-pill:hover { opacity: 0.85; transform: scale(1.05); }
 .play-mode-pill:active { transform: scale(0.97); }
-
-.quest-search-row { position: relative; margin: 0 20px 12px; }
-
-.quest-search-input {
-  width: 100%;
-  padding: 10px 34px 10px 14px;
-  border-radius: 12px;
-  border: 1.5px solid var(--border);
-  background: var(--bg);
-  color: var(--dark);
-  font-family: 'Nunito', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  transition: border-color 0.15s;
-}
-
-.quest-search-input::placeholder { color: var(--muted); }
-.quest-search-input:focus { outline: none; border-color: var(--teal); }
-
-.quest-search-clear {
-  position: absolute;
-  top: 50%; right: 8px;
-  transform: translateY(-50%);
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  border: none;
-  background: var(--border);
-  color: var(--dark);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-}
-
-.quest-search-clear:hover { background: var(--muted); color: #fff; }
-.quest-search-clear.hidden { display: none; }
 
 .quest-no-results {
   padding: 24px 20px;
@@ -1303,6 +1260,14 @@ header {
   margin-bottom: 26px;
 }
 
+.howto-hint {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: left;
+}
+
 .welcome-skip {
   display: block;
   width: 100%;
@@ -1359,6 +1324,22 @@ header {
 }
 
 .restart-hunt-btn:hover { color: var(--dark); }
+
+.play-mode-back-btn {
+  display: block;
+  background: none;
+  border: none;
+  padding: 0 0 12px;
+  margin: -8px 0 0;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.play-mode-back-btn:hover { color: var(--dark); }
 
 .restart-confirm {
   font-size: 12px;
@@ -1541,7 +1522,7 @@ header {
 @media (max-width: 600px) {
   :root {
     --panel-width: 100vw;
-    --header-height: 96px;
+    --header-height: 128px;
   }
 
   header {
@@ -1551,16 +1532,20 @@ header {
     align-items: center;
   }
 
-  /* Row 1: logo + action buttons */
+  /* Row 1: logo alone — Explore/Quest + Add Art no longer fit beside it now
+     that there are two nav buttons instead of one */
   .logo {
     font-size: 16px;
     order: 1;
-    flex: 1;
+    flex: 1 1 100%;
   }
 
-  .quest-nav-btn {
+  /* Row 2: action buttons, kept together in one group —
+     reset the desktop margin-left:auto, this row has no other sibling to push away from */
+  .quest-mode-nav {
     order: 2;
     flex-shrink: 0;
+    margin-left: 0;
   }
 
   .add-btn {
@@ -1568,7 +1553,7 @@ header {
     flex-shrink: 0;
   }
 
-  /* Row 2: filters full-width */
+  /* Row 3: filters full-width */
   .filters {
     order: 3;
     width: 100%;

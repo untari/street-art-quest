@@ -48,7 +48,6 @@ let shuffleOrderIds = null;
 
 const PRECISION_KEY = 'saq_precision';
 let precision = localStorage.getItem(PRECISION_KEY) || 'exact';
-let searchQuery = '';
 let questPanelTab = 'quests';
 
 const HUNT_MODE_KEY = 'saq_hunt_mode';
@@ -172,12 +171,10 @@ function openQuestPanel() {
   }
   renderQuestPanelBody();
   document.getElementById('quest-panel').classList.add('open');
-  document.getElementById('open-quests').classList.add('active');
 }
 
 function closeQuestPanel() {
   document.getElementById('quest-panel').classList.remove('open');
-  document.getElementById('open-quests').classList.remove('active');
 }
 
 function groupLabelFor(art) {
@@ -225,17 +222,14 @@ function renderQuestList() {
 
   const visible = ordered
     .filter(isQuestVisible)
-    .filter(passesExploreFilters)
-    .filter(art => !searchQuery || (art.artist || '').toLowerCase().includes(searchQuery));
+    .filter(passesExploreFilters);
 
   if (visible.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'quest-no-results';
-    empty.textContent = searchQuery
-      ? `No quests match "${searchQuery}"`
-      : activeArtist
-        ? `No quests by ${activeArtist}`
-        : `No ${activeFilter} quests`;
+    empty.textContent = activeArtist
+      ? `No quests by ${activeArtist}`
+      : `No ${activeFilter} quests`;
     list.appendChild(empty);
   }
 
@@ -269,7 +263,7 @@ function renderQuestList() {
     list.appendChild(item);
   });
 
-  if (huntMode === 'quest' && !searchQuery) {
+  if (huntMode === 'quest') {
     const remaining =
       allArtworks.filter(a => !isCompleted(a.id)).length - (getActiveQuest() ? 1 : 0);
     if (remaining > 0) {
@@ -315,14 +309,10 @@ function updateQuestScore() {
   const completed = getCompleted();
   const score = document.getElementById('quest-panel-score');
   if (score) score.textContent = `${completed.length} / ${allArtworks.length}`;
-  updateNavScore();
 }
 
 function renderQuestPanelBody() {
   document.getElementById('play-mode-pill').classList.toggle('hidden', questPanelTab === 'gallery');
-  document.querySelector('.quest-search-row').classList.toggle(
-    'hidden', questPanelTab === 'gallery' || huntMode === 'quest'
-  );
 
   if (questPanelTab === 'gallery') {
     renderGallery();
@@ -383,7 +373,7 @@ function updatePlayModePill() {
   const pill = document.getElementById('play-mode-pill');
   if (!pill) return;
   if (activeArtist) {
-    pill.textContent = `🎨 ${activeArtist}`;
+    pill.textContent = `🎨 Artist`;
     return;
   }
   if (activeFilter && activeFilter !== 'all') {
@@ -468,8 +458,17 @@ function initPlayMode() {
       setPlayMode(btn.dataset.mode);
     });
   });
-  document.getElementById('play-mode-done').addEventListener('click', closePlayModeBackdrop);
+  // also opens the list — a no-op if it's already open (e.g. tweaking settings mid-hunt)
+  document.getElementById('play-mode-done').addEventListener('click', () => {
+    closePlayModeBackdrop();
+    openQuestPanel();
+  });
   document.getElementById('play-mode-pill').addEventListener('click', openPlayModeBackdrop);
+  // re-explain the current mode, then land back on this same sheet
+  document.getElementById('play-mode-back').addEventListener('click', () => {
+    closePlayModeBackdrop();
+    showHowToPlay(huntMode);
+  });
   // click the dimmed area outside the card to close
   document.getElementById('play-mode-backdrop').addEventListener('click', e => {
     if (e.target === e.currentTarget) closePlayModeBackdrop();
@@ -635,7 +634,7 @@ function applyHuntMode() {
     updatePlayModePill();
   }
 
-  document.querySelectorAll('.mode-option').forEach(b => {
+  document.querySelectorAll('.mode-option, .quest-nav-btn[data-mode-choice]').forEach(b => {
     b.classList.toggle('active', b.dataset.modeChoice === huntMode);
   });
 }
@@ -685,28 +684,6 @@ function initPrecision() {
   document.querySelectorAll('.precision-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.precision === precision);
     btn.addEventListener('click', () => setPrecision(btn.dataset.precision));
-  });
-}
-
-// ─── Quest search ─────────────────────────────────
-
-function initSearch() {
-  const input = document.getElementById('quest-search');
-  const clearBtn = document.getElementById('quest-search-clear');
-  if (!input) return;
-
-  input.addEventListener('input', () => {
-    searchQuery = input.value.trim().toLowerCase();
-    clearBtn.classList.toggle('hidden', !searchQuery);
-    renderQuestPanelBody();
-  });
-
-  clearBtn.addEventListener('click', () => {
-    input.value = '';
-    searchQuery = '';
-    clearBtn.classList.add('hidden');
-    renderQuestPanelBody();
-    input.focus();
   });
 }
 
@@ -974,14 +951,6 @@ function attemptCheckin() {
   );
 }
 
-// ─── Nav score ────────────────────────────────────
-
-function updateNavScore() {
-  const completed = getCompleted();
-  const el = document.getElementById('quest-nav-score');
-  if (el) el.textContent = `${completed.length}/${allArtworks.length}`;
-}
-
 // ─── Filters ──────────────────────────────────────
 
 function initFilters() {
@@ -1050,7 +1019,6 @@ async function loadApprovedSubmissions() {
   allArtworks = allArtworks.concat(community);
   initFilters();
   renderMarkers();
-  updateNavScore();
 }
 
 // ─── User location ────────────────────────────────
@@ -1191,31 +1159,114 @@ function initMascot(startTour) {
   }
 }
 
-// ─── Quest button first-open hint ─────────────────
+// ─── Quest nav buttons (Explore / Quest) ───────────
 
 const WELCOME_KEY = 'saq_welcomed';
 
 function initWelcome() {
-  const questBtn = document.getElementById('open-quests');
   if (!localStorage.getItem(WELCOME_KEY)) {
-    questBtn.classList.add('pulsing');
+    document.getElementById('nav-explore').classList.add('pulsing');
+    document.getElementById('nav-quest').classList.add('pulsing');
   }
 }
 
 // stops the pulse the moment the user is pointed elsewhere (tour start/skip)
 // or opens the list directly — never leave two contradictory CTAs on screen
 function clearWelcomePulse() {
-  document.getElementById('open-quests').classList.remove('pulsing');
+  document.getElementById('nav-explore').classList.remove('pulsing');
+  document.getElementById('nav-quest').classList.remove('pulsing');
   localStorage.setItem(WELCOME_KEY, '1');
 }
 
-function handleQuestsClick() {
-  clearWelcomePulse();
-  if (document.getElementById('quest-panel').classList.contains('open')) {
-    closeQuestPanel();
-  } else {
-    openQuestPanel();
+// each nav button explains just its own mode — no combined chooser.
+// Continuing sets that mode, then hands off to the existing sort/challenge
+// settings sheet before the list opens.
+const HOWTO_TEXT = {
+  quest: {
+    label: 'Quest mode',
+    text: 'Only one pin shows on the map at a time. Walk to it and check in — it reveals what it is, then your next quest appears.'
+  },
+  explore: {
+    label: 'Explore mode',
+    text: 'All 21 pins show on the map right away. Tap any one, in any order, and check in whenever you get there.'
   }
+};
+let pendingHuntMode = null;
+
+// returning players (they've already found something) get asked whether to
+// pick up where they left off instead of walking back through onboarding
+function handleQuestNavClick(mode) {
+  clearWelcomePulse();
+  if (getCompleted().length > 0) {
+    showResumeChoice(mode);
+  } else {
+    showHowToPlay(mode);
+  }
+}
+
+function initQuestNav() {
+  document.getElementById('nav-explore').addEventListener('click', () => handleQuestNavClick('explore'));
+  document.getElementById('nav-quest').addEventListener('click', () => handleQuestNavClick('quest'));
+}
+
+function showResumeChoice(mode) {
+  pendingHuntMode = mode;
+  const found = getCompleted().length;
+  document.getElementById('resume-progress-text').textContent =
+    `You've found ${found} of ${allArtworks.length} so far`;
+  document.getElementById('resume-restart-btn').classList.remove('hidden');
+  document.getElementById('resume-restart-confirm').classList.add('hidden');
+  document.getElementById('resume-backdrop').classList.remove('hidden');
+}
+
+function hideResumeChoice() {
+  document.getElementById('resume-backdrop').classList.add('hidden');
+}
+
+function initResumeChoice() {
+  document.getElementById('resume-continue').addEventListener('click', () => {
+    hideResumeChoice();
+    setHuntMode(pendingHuntMode);
+    openQuestPanel();
+  });
+  document.getElementById('resume-restart-btn').addEventListener('click', () => {
+    document.getElementById('resume-restart-btn').classList.add('hidden');
+    document.getElementById('resume-restart-confirm').classList.remove('hidden');
+  });
+  document.getElementById('resume-restart-cancel').addEventListener('click', () => {
+    document.getElementById('resume-restart-confirm').classList.add('hidden');
+    document.getElementById('resume-restart-btn').classList.remove('hidden');
+  });
+  document.getElementById('resume-restart-yes').addEventListener('click', () => {
+    resetProgress();
+    hideResumeChoice();
+    showHowToPlay(pendingHuntMode);
+  });
+  document.getElementById('resume-backdrop').addEventListener('click', e => {
+    if (e.target === e.currentTarget) hideResumeChoice();
+  });
+}
+
+function showHowToPlay(mode) {
+  pendingHuntMode = mode;
+  document.getElementById('howto-mode-label').textContent = HOWTO_TEXT[mode].label;
+  document.getElementById('howto-mode-text').textContent = HOWTO_TEXT[mode].text;
+  document.getElementById('howto-backdrop').classList.remove('hidden');
+}
+
+function hideHowToPlay() {
+  document.getElementById('howto-backdrop').classList.add('hidden');
+}
+
+function initHowToPlay() {
+  document.getElementById('howto-continue').addEventListener('click', () => {
+    hideHowToPlay();
+    setHuntMode(pendingHuntMode);
+    openPlayModeBackdrop();
+  });
+  document.getElementById('howto-backdrop').addEventListener('click', e => {
+    if (e.target === e.currentTarget) hideHowToPlay();
+  });
 }
 
 // ─── Guided tour ──────────────────────────────────
@@ -1226,7 +1277,7 @@ const TOUR_KEY = 'saq_tour_seen';
 const TOUR_STEPS = [
   { selector: '#map', title: 'The map', text: 'That glowing dot is your current quest — tap it for a hint and to check in.' },
   { selector: '#locate-btn', title: 'Find yourself', text: 'Tap to show your position and see live distance to your next quest.' },
-  { selector: '#open-quests', title: 'Your quests', text: 'See your full checklist of artworks and track how many you’ve found.' },
+  { selector: '.quest-mode-nav', title: 'Explore or Quest', text: 'Explore browses all 21 freely; Quest guides you one at a time. Tap either to see your list.' },
   { selector: '#filters', title: 'Filter by type', text: 'Show just the kinds of art you\'ve found so far, and narrow your quest list.' },
   { selector: '.add-btn', title: 'Add art', text: 'Spotted a piece that’s not on the map yet? Submit it here.' }
 ];
@@ -1309,13 +1360,14 @@ function initTour() {
 allArtworks = ARTWORKS;
 initFilters();
 initHuntMode();
+initQuestNav();
+initHowToPlay();
+initResumeChoice();
 renderMarkers();
-updateNavScore();
 initLocation();
 initPlayMode();
 initRestart();
 initPrecision();
-initSearch();
 initGalleryToggle();
 const startTour = initTour();
 initMascot(startTour);
@@ -1323,7 +1375,6 @@ initWelcome();
 loadApprovedSubmissions();
 
 document.getElementById('close-panel').addEventListener('click', closePanel);
-document.getElementById('open-quests').addEventListener('click', handleQuestsClick);
 document.getElementById('close-quest-panel').addEventListener('click', closeQuestPanel);
 document.getElementById('close-quest-card').addEventListener('click', closeQuestCard);
 document.getElementById('quest-backdrop').addEventListener('click', closeQuestCard);

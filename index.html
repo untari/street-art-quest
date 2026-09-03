@@ -16,7 +16,10 @@
     <div class="filters" id="filters">
       <button class="filter-btn active" data-type="all">All</button>
     </div>
-    <button class="quest-nav-btn" id="open-quests">QUESTS <span id="quest-nav-score">0/20</span></button>
+    <div class="quest-mode-nav">
+      <button class="quest-nav-btn" id="nav-explore" data-mode-choice="explore">🗺️ Explore</button>
+      <button class="quest-nav-btn" id="nav-quest" data-mode-choice="quest">🎯 Quest</button>
+    </div>
     <a href="submit.html" class="add-btn">+ Add Art</a>
   </header>
 
@@ -43,10 +46,6 @@
       <button id="close-quest-panel" class="quest-panel-close">×</button>
     </div>
     <button id="play-mode-pill" class="play-mode-pill">📋 List order</button>
-    <div class="quest-search-row">
-      <input type="text" id="quest-search" class="quest-search-input" placeholder="Search by artist…" />
-      <button id="quest-search-clear" class="quest-search-clear hidden" aria-label="Clear search">×</button>
-    </div>
     <div id="quest-list" class="quest-list"></div>
   </div>
 
@@ -75,16 +74,38 @@
     </div>
   </div>
 
+  <div id="resume-backdrop" class="welcome-backdrop hidden">
+    <div class="welcome-card">
+      <div class="welcome-logo">WELCOME <span>BACK</span></div>
+      <p class="welcome-city" id="resume-progress-text">You've found some pieces already</p>
+      <button id="resume-continue" class="play-mode-done">▶️ Resume my hunt</button>
+      <div class="restart-hunt-row">
+        <button id="resume-restart-btn" class="restart-hunt-btn">🔄 Start a new hunt</button>
+        <div id="resume-restart-confirm" class="restart-confirm hidden">
+          <span>Clear your progress and start over?</span>
+          <div class="restart-confirm-actions">
+            <button id="resume-restart-yes" class="restart-confirm-yes">Yes, restart</button>
+            <button id="resume-restart-cancel" class="restart-confirm-cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="howto-backdrop" class="welcome-backdrop hidden">
+    <div class="welcome-card">
+      <div class="welcome-logo">HOW TO <span>PLAY</span></div>
+      <p class="welcome-city" id="howto-mode-label">Quest mode</p>
+      <p class="howto-hint" id="howto-mode-text"></p>
+      <button id="howto-continue" class="play-mode-done">Got it</button>
+    </div>
+  </div>
+
   <div id="play-mode-backdrop" class="welcome-backdrop hidden">
     <div class="welcome-card">
+      <button id="play-mode-back" class="play-mode-back-btn">← How to play</button>
       <div class="welcome-logo">HOW DO YOU <span>WANT TO PLAY?</span></div>
       <p class="welcome-city">Tune your hunt</p>
-
-      <div class="play-settings-heading">Play style</div>
-      <div class="precision-toggle-row">
-        <button class="mode-option" data-mode-choice="explore">🗺️ Explore</button>
-        <button class="mode-option" data-mode-choice="quest">🎯 Quest</button>
-      </div>
 
       <div class="play-settings-heading">Sort quests by</div>
       <div class="play-mode-list">
