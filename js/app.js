@@ -111,11 +111,70 @@ function isUnverified(id) {
   return getUnverified().includes(id);
 }
 
+// ─── Type colours ─────────────────────────────────
+// The core types have hand-picked colours (kept in sync with the CSS custom
+// properties). Community submissions can carry any free-text type; every
+// unknown type gets its own colour from an on-brand palette, assigned in the
+// order the type is first seen. Submissions load oldest-first (query is
+// ordered by id), so a type keeps its colour for good once it appears —
+// approving a newer type only ever adds a colour at the end.
+
+const TYPE_COLORS = {
+  'Mural':        '#ff6b9d', // --pink
+  'Sculpture':    '#7c4dff', // --purple
+  'Paste-up':     '#ff9f43', // --orange
+  'Sticker':      '#2ecc71', // --green
+  'Installation': '#3498db', // --blue
+};
+
+// friendly-flat family matching the five cores above, spread around the wheel
+const TYPE_PALETTE = [
+  '#2ec4b6', // teal (brand accent)
+  '#ffd166', // warm yellow
+  '#ef476f', // raspberry
+  '#06d6a0', // mint
+  '#9b5de5', // violet
+  '#f78c6b', // coral
+  '#4d96ff', // cornflower
+  '#c77dff', // orchid
+  '#43aa8b', // jade
+  '#f9844a', // tangerine
+  '#b5179e', // magenta
+  '#90be6d', // sage
+  '#577590', // slate blue
+  '#f94144', // red
+  '#4361ee', // indigo
+  '#ff8fab', // flamingo
+];
+
+let _typeColorMap = null;
+
+function buildTypeColorMap() {
+  _typeColorMap = {};
+  let i = 0;
+  for (const art of allArtworks) {
+    const t = (art.type || 'Other').trim();
+    if (!t || TYPE_COLORS[t] || t in _typeColorMap) continue;
+    // once past the curated palette, fall back to evenly-spaced hues (still unique)
+    _typeColorMap[t] = TYPE_PALETTE[i] ||
+      `hsl(${Math.round((i * 137.508) % 360)}, 62%, 55%)`;
+    i++;
+  }
+}
+
+function typeColor(type) {
+  const key = (type || 'Other').trim();
+  if (TYPE_COLORS[key]) return TYPE_COLORS[key];
+  if (!_typeColorMap || !(key in _typeColorMap)) buildTypeColorMap();
+  return _typeColorMap[key] || TYPE_PALETTE[0];
+}
+
 // ─── Markers ──────────────────────────────────────
 
 function makeMarker(art, isActive) {
   const el = document.createElement('div');
   el.className = `art-marker ${art.type}${isCompleted(art.id) ? ' found' : ''}${isActive ? ' active' : ''}`;
+  el.style.background = typeColor(art.type);
 
   const marker = L.marker([art.lat, art.lng], {
     icon: L.divIcon({
@@ -295,7 +354,7 @@ function renderGallery() {
     const card = document.createElement('div');
     card.className = 'gallery-card';
     card.innerHTML = `
-      <div class="gallery-card-thumb ${art.type}">${art.photo ? `<img src="${art.photo}" alt="${art.title}">` : '✓'}</div>
+      <div class="gallery-card-thumb ${art.type}" style="background:${typeColor(art.type)}">${art.photo ? `<img src="${art.photo}" alt="${art.title}">` : '✓'}</div>
       <div class="gallery-card-title">${art.title}</div>
       <div class="gallery-card-artist">${art.artist}</div>
     `;
@@ -717,7 +776,7 @@ function openQuestCard(art) {
 
   content.innerHTML = `
     <div class="quest-card-header">
-      <span class="quest-card-type ${art.type}">${art.type}</span>
+      <span class="quest-card-type ${art.type}" style="background:${typeColor(art.type)}">${art.type}</span>
       ${done ? `<span class="quest-card-found-badge">FOUND ✓${isUnverified(art.id) ? ' <span class="unverified-tag">unverified</span>' : ''}</span>` : ''}
     </div>
     ${photoHTML}
@@ -879,7 +938,7 @@ function showCheckinConfirm(art, { unverified } = {}) {
 
   content.innerHTML = `
     <div class="quest-card-header">
-      <span class="quest-card-type ${art.type}">${art.type}</span>
+      <span class="quest-card-type ${art.type}" style="background:${typeColor(art.type)}">${art.type}</span>
     </div>
     ${photoHTML}
     <div class="quest-confirm-body">
@@ -954,6 +1013,7 @@ function attemptCheckin() {
 // ─── Filters ──────────────────────────────────────
 
 function initFilters() {
+  buildTypeColorMap(); // refresh now that allArtworks may have grown
   const container = document.getElementById('filters');
   const types = [...new Set(allArtworks.map(a => a.type).filter(Boolean))].sort();
 
@@ -964,6 +1024,7 @@ function initFilters() {
     btn.className = 'filter-btn';
     btn.dataset.type = type;
     btn.textContent = type;
+    btn.style.background = typeColor(type);
     if (type === activeFilter) btn.classList.add('active');
     container.appendChild(btn);
   });
@@ -1006,7 +1067,8 @@ async function loadApprovedSubmissions() {
   const { data, error } = await db
     .from('submissions')
     .select('*')
-    .eq('status', 'approved');
+    .eq('status', 'approved')
+    .order('id', { ascending: true }); // oldest-first keeps type→colour assignment stable
 
   if (error || !data || !data.length) return;
 
