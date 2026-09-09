@@ -1255,9 +1255,8 @@ function clearWelcomePulse() {
 }
 
 // a returning player who left off in quest mode lands on a near-empty map
-// (one pin, no filter bar) — remind them which mode they're in and offer a way out
-const QUEST_WELCOME_SEEN_KEY = 'saq_quest_welcome_seen';
-
+// (one pin, no filter bar) — remind them which mode they're in and offer a way
+// out. Shown on every load/return while quest mode is active.
 function initQuestWelcome() {
   const backdrop = document.getElementById('quest-welcome-backdrop');
   const close = () => backdrop.classList.add('hidden');
@@ -1275,15 +1274,13 @@ function initQuestWelcome() {
   });
 
   const isReturning = localStorage.getItem(WELCOME_KEY);
-  const alreadyShown = sessionStorage.getItem(QUEST_WELCOME_SEEN_KEY);
-  if (huntMode !== 'quest' || !isReturning || alreadyShown) return;
+  if (huntMode !== 'quest' || !isReturning) return;
 
   const found = getCompleted().length;
   document.getElementById('quest-welcome-text').textContent = found > 0
     ? `You're mid-hunt — ${found} of ${allArtworks.length} found`
     : `Only one pin shows on the map at a time`;
   backdrop.classList.remove('hidden');
-  sessionStorage.setItem(QUEST_WELCOME_SEEN_KEY, '1');
 }
 
 // each nav button explains just its own mode — no combined chooser.
