@@ -237,8 +237,9 @@ function closeQuestPanel() {
 }
 
 function groupLabelFor(art) {
-  // already narrowed to one artist/type — no headers needed
-  if (activeArtist || activeFilter !== 'all') return null;
+  // narrowed to one artist/type — a single header naming it sits above the list
+  if (activeArtist) return activeArtist;
+  if (activeFilter !== 'all') return activeFilter;
   if (playMode === 'artist') return art.artist || 'Unknown';
   if (playMode === 'type') return art.type;
   return null;
@@ -305,13 +306,29 @@ function renderQuestList() {
 
     const num = allArtworks.indexOf(art) + 1;
     const done = completed.includes(art.id);
+    // quest mode keeps the piece a mystery until check-in — show only its type.
+    // everywhere else, lead with the name so "by artist" / "by type" lists read right.
+    const reveal = huntMode !== 'quest' || done;
+    const area = art.address.split(',')[0];
+    // drop details the list is already organised by (a header or the pill shows them)
+    const typeIsRedundant = playMode === 'type' || (activeFilter && activeFilter !== 'all');
+    const artistIsRedundant = playMode === 'artist';
+    const hasArtist = art.artist && art.artist !== 'Unknown';
+    const primary = reveal ? art.title : art.type;
+    const secondary = reveal
+      ? [
+          hasArtist && !artistIsRedundant ? `by ${art.artist}` : null,
+          !typeIsRedundant ? art.type : null,
+          area,
+        ].filter(Boolean).join(' · ')
+      : area;
     const item = document.createElement('div');
     item.className = `quest-item${done ? ' completed' : ''}`;
     item.innerHTML = `
       <div class="quest-item-num">${done ? '✓' : num}</div>
       <div class="quest-item-info">
-        <div class="quest-item-type">${art.type}</div>
-        <div class="quest-item-area">${art.address.split(',')[0]}</div>
+        <div class="quest-item-type${reveal ? ' is-title' : ''}">${primary}</div>
+        <div class="quest-item-area">${secondary}</div>
       </div>
       ${done
         ? '<div class="quest-item-done-label">Found</div>'
@@ -428,20 +445,17 @@ function resolveNearestOrigin(callback) {
   );
 }
 
+// the pill names how the list is organised (and taps to change it); the actual
+// pick — which artist, which type — is shown by the list's own header instead
 function updatePlayModePill() {
   const pill = document.getElementById('play-mode-pill');
   if (!pill) return;
-  if (activeArtist) {
-    pill.textContent = `🎨 Artist`;
-    return;
-  }
-  if (activeFilter && activeFilter !== 'all') {
-    pill.textContent = `🖼️ ${activeFilter}`;
-    return;
-  }
-  const mode = playMode && PLAY_MODES[playMode] ? playMode : 'default';
+  let mode;
+  if (activeArtist) mode = 'artist';
+  else if (activeFilter && activeFilter !== 'all') mode = 'type';
+  else mode = playMode && PLAY_MODES[playMode] ? playMode : 'default';
   const { icon, label } = PLAY_MODES[mode];
-  pill.textContent = `${icon} ${label}`;
+  pill.textContent = `${icon} ${label} ⌄`;
 }
 
 function refreshQuestUI() {
@@ -1240,6 +1254,38 @@ function clearWelcomePulse() {
   localStorage.setItem(WELCOME_KEY, '1');
 }
 
+// a returning player who left off in quest mode lands on a near-empty map
+// (one pin, no filter bar) — remind them which mode they're in and offer a way out
+const QUEST_WELCOME_SEEN_KEY = 'saq_quest_welcome_seen';
+
+function initQuestWelcome() {
+  const backdrop = document.getElementById('quest-welcome-backdrop');
+  const close = () => backdrop.classList.add('hidden');
+
+  document.getElementById('quest-welcome-resume').addEventListener('click', () => {
+    close();
+    openQuestPanel();
+  });
+  document.getElementById('quest-welcome-explore').addEventListener('click', () => {
+    close();
+    setHuntMode('explore');
+  });
+  backdrop.addEventListener('click', e => {
+    if (e.target === e.currentTarget) close();
+  });
+
+  const isReturning = localStorage.getItem(WELCOME_KEY);
+  const alreadyShown = sessionStorage.getItem(QUEST_WELCOME_SEEN_KEY);
+  if (huntMode !== 'quest' || !isReturning || alreadyShown) return;
+
+  const found = getCompleted().length;
+  document.getElementById('quest-welcome-text').textContent = found > 0
+    ? `You're mid-hunt — ${found} of ${allArtworks.length} found`
+    : `Only one pin shows on the map at a time`;
+  backdrop.classList.remove('hidden');
+  sessionStorage.setItem(QUEST_WELCOME_SEEN_KEY, '1');
+}
+
 // each nav button explains just its own mode — no combined chooser.
 // Continuing sets that mode, then hands off to the existing sort/challenge
 // settings sheet before the list opens.
@@ -1434,6 +1480,7 @@ initGalleryToggle();
 const startTour = initTour();
 initMascot(startTour);
 initWelcome();
+initQuestWelcome();
 loadApprovedSubmissions();
 
 document.getElementById('close-panel').addEventListener('click', closePanel);

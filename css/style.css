@@ -500,6 +500,13 @@ header {
   margin-bottom: 2px;
 }
 
+/* when the row leads with the artwork name instead of its type */
+.quest-item-type.is-title {
+  font-size: 14px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .quest-item-area {
   font-size: 11px;
   color: var(--muted);

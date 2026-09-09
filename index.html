@@ -7,7 +7,7 @@
   <meta name="description" content="Hunt down street art and murals hidden across Sheung Wan, Hong Kong." />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=2" />
+  <link rel="stylesheet" href="css/style.css?v=10" />
 </head>
 <body>
 
@@ -45,7 +45,7 @@
       <button id="gallery-toggle" class="quest-panel-icon-btn" title="View gallery" aria-label="View gallery">🖼️</button>
       <button id="close-quest-panel" class="quest-panel-close">×</button>
     </div>
-    <button id="play-mode-pill" class="play-mode-pill">📋 List order</button>
+    <button id="play-mode-pill" class="play-mode-pill">📋 List order ⌄</button>
     <div id="quest-list" class="quest-list"></div>
   </div>
 
@@ -98,6 +98,17 @@
       <p class="welcome-city" id="howto-mode-label">Quest mode</p>
       <p class="howto-hint" id="howto-mode-text"></p>
       <button id="howto-continue" class="play-mode-done">Got it</button>
+    </div>
+  </div>
+
+  <div id="quest-welcome-backdrop" class="welcome-backdrop hidden">
+    <div class="welcome-card">
+      <div class="welcome-logo">QUEST <span>MODE</span></div>
+      <p class="welcome-city" id="quest-welcome-text">Pick up where you left off</p>
+      <button id="quest-welcome-resume" class="play-mode-done">▶️ Resume quest</button>
+      <div class="restart-hunt-row">
+        <button id="quest-welcome-explore" class="restart-hunt-btn">🗺️ Switch to Explore mode</button>
+      </div>
     </div>
   </div>
 
@@ -193,6 +204,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/data.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=10"></script>
 </body>
 </html>
