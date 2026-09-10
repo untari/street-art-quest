@@ -33,6 +33,7 @@ let checkinFailCount = 0;
 let userMarker = null;
 let userCircle = null;
 let trackingLine = null;
+let activeQuestId = null; // id of the currently glowing pin — re-render when it moves
 
 const PLAY_MODE_KEY = 'saq_play_mode';
 const PLAY_MODES = {
@@ -59,8 +60,17 @@ const ARTIST_KEY = 'saq_artist';
 let activeArtist = localStorage.getItem(ARTIST_KEY) || null; // null = every artist
 
 function getActiveQuest() {
-  const ordered = orderForPlayMode(allArtworks);
-  return ordered.find(a => !isCompleted(a.id)) || null;
+  // Explore mode: the "current" quest is just the closest one you can still find,
+  // so the glowing pin is always somewhere you can actually walk to.
+  if (huntMode === 'explore' && nearestOrigin) {
+    const unfound = allArtworks.filter(a => !isCompleted(a.id));
+    const pool = unfound.filter(passesExploreFilters);
+    return [...(pool.length ? pool : unfound)].sort((a, b) =>
+      getDistance(nearestOrigin.lat, nearestOrigin.lng, a.lat, a.lng) -
+      getDistance(nearestOrigin.lat, nearestOrigin.lng, b.lat, b.lng)
+    )[0] || null;
+  }
+  return orderForPlayMode(allArtworks).find(a => !isCompleted(a.id)) || null;
 }
 
 function isQuestVisible(art) {
@@ -194,8 +204,8 @@ function renderMarkers() {
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  const ordered = orderForPlayMode(allArtworks);
-  const activeQuest = ordered.find(a => !isCompleted(a.id)) || null;
+  const activeQuest = getActiveQuest();
+  activeQuestId = activeQuest?.id ?? null;
 
   allArtworks.forEach(art => {
     if (!passesExploreFilters(art)) return;
@@ -1187,6 +1197,11 @@ function initLocation() {
           userCircle.setLatLng([lat, lng]);
           userCircle.setRadius(accuracy);
         }
+
+        // keep the "nearest" origin current so the glowing pin follows you;
+        // only repaint the markers when the closest un-found piece actually changes
+        nearestOrigin = { lat, lng };
+        if (getActiveQuest()?.id !== activeQuestId) renderMarkers();
 
         updateTrackingLine(lat, lng);
       },
