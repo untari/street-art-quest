@@ -171,6 +171,24 @@ function typeColor(type) {
 
 // ─── Markers ──────────────────────────────────────
 
+// Google Maps' "approximate location" halo: no border, no dashes — just a
+// soft radial falloff, faked with a few borderless concentric circles since
+// Leaflet has no native radial-gradient fill. Returns the layers so callers
+// can track them for cleanup.
+function drawApproxZone(mapInstance, latlng, radius, color) {
+  const circle = L.circle(latlng, {
+    radius,
+    color,
+    weight: 2,
+    opacity: 0.6,
+    fillColor: color,
+    fillOpacity: 0.18,
+    interactive: false
+  });
+  circle.addTo(mapInstance);
+  return [circle];
+}
+
 function makeMarker(art, isActive) {
   const el = document.createElement('div');
   el.className = `art-marker ${art.type}${isCompleted(art.id) ? ' found' : ''}${isActive ? ' active' : ''}`;
@@ -201,6 +219,15 @@ function renderMarkers() {
     if (!passesExploreFilters(art)) return;
     if (!isQuestVisible(art)) return;
     const isActive = !!activeQuest && art.id === activeQuest.id;
+
+    // Approx mode should look different on the map itself, not just once you
+    // tap in — the active quest gets a wide "zone" halo instead of pretending
+    // the small dot isn't still sitting exactly on the true spot.
+    if (isActive && precision === 'approx' && !isCompleted(art.id)) {
+      const zoneRadius = Math.max(200, (art.radius || 50) * 4);
+      markers.push(...drawApproxZone(map, [art.lat, art.lng], zoneRadius, '#9b5de5'));
+    }
+
     const m = makeMarker(art, isActive);
     m.addTo(map);
     markers.push(m);
@@ -392,17 +419,29 @@ function renderQuestPanelBody() {
   updateQuestScore();
 }
 
+// checklist icon (quest list) / image icon (gallery) — same line-icon style
+// as the rest of the UI, swapped in as the panel's two tabs toggle
+const GALLERY_TOGGLE_ICONS = {
+  quests: `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/>
+    <path d="M4 6l1 1 2-2"/><path d="M4 12l1 1 2-2"/><path d="M4 18l1 1 2-2"/>
+  </svg>`,
+  gallery: `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+  </svg>`
+};
+
 function initGalleryToggle() {
   const btn = document.getElementById('gallery-toggle');
   const title = document.querySelector('.quest-panel-title');
   btn.addEventListener('click', () => {
     questPanelTab = questPanelTab === 'gallery' ? 'quests' : 'gallery';
     if (questPanelTab === 'gallery') {
-      btn.textContent = '🎯';
+      btn.innerHTML = GALLERY_TOGGLE_ICONS.quests;
       btn.title = 'Back to quests';
       title.textContent = 'GALLERY';
     } else {
-      btn.textContent = '🖼️';
+      btn.innerHTML = GALLERY_TOGGLE_ICONS.gallery;
       btn.title = 'View gallery';
       title.textContent = 'QUESTS';
     }
@@ -432,11 +471,18 @@ function resolveNearestOrigin(callback) {
 
 // sort is automatic now, so the pill's only job is the artist/type filter —
 // same combined label as the quest list's own header (groupLabelFor)
+// static label — it used to show the active filter, but that's confusing
+// when it silently changes text/icon depending on what you picked. The
+// quest list's own header already shows the active filter (with a ✕ to
+// clear it), so the pill's only job is "tap here to change settings."
 function updatePlayModePill() {
   const pill = document.getElementById('play-mode-pill');
   if (!pill) return;
-  const label = groupLabelFor();
-  pill.textContent = label ? `🎨 ${label} ⌄` : '⚙️ Filters ⌄';
+  pill.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3.2"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+  Change play mode ⌄`;
 }
 
 function refreshQuestUI() {
@@ -723,18 +769,17 @@ function openQuestCard(art) {
   const content = document.getElementById('quest-card-content');
   checkinFailCount = 0;
 
-  const showMiniMap = !done && !art.photo && precision === 'exact';
+  // Approx mode still shows a map — just zoomed out, with a much wider,
+  // dashed "zone" circle instead of the tight check-in radius, so there's
+  // an actual visible difference from Exact instead of a bare text placeholder.
+  const isApprox = precision === 'approx';
+  const showMiniMap = !done && !art.photo;
 
   const photoHTML = art.photo
     ? `<div class="quest-photo"><img src="${art.photo}" alt="Quest" /></div>`
     : done
       ? `<div class="quest-photo-placeholder">✓</div>`
-      : precision === 'approx'
-        ? `<div class="quest-zone-placeholder">
-             <div class="quest-zone-placeholder-icon">🌫️</div>
-             <div class="quest-zone-placeholder-text">Approximate zone — follow the hint</div>
-           </div>`
-        : `<div id="quest-mini-map" class="quest-mini-map"></div>`;
+      : `<div id="quest-mini-map" class="quest-mini-map"></div>`;
 
   const nextQuest = done ? getNextQuest() : null;
 
@@ -767,9 +812,10 @@ function openQuestCard(art) {
   document.getElementById('quest-backdrop').classList.remove('hidden');
 
   if (showMiniMap) {
+    const zoneRadius = isApprox ? Math.max(200, (art.radius || 50) * 4) : (art.radius || 50);
     miniMapInstance = L.map('quest-mini-map', {
       center: [art.lat, art.lng],
-      zoom: 17,
+      zoom: isApprox ? 15 : 17,
       zoomControl: false,
       dragging: false,
       scrollWheelZoom: false,
@@ -783,13 +829,17 @@ function openQuestCard(art) {
       crossOrigin: true,
       maxZoom: 20
     }).addTo(miniMapInstance);
-    L.circle([art.lat, art.lng], {
-      radius: art.radius || 50,
-      color: '#2ec4b6',
-      fillColor: '#2ec4b6',
-      fillOpacity: 0.18,
-      weight: 2.5
-    }).addTo(miniMapInstance);
+    if (isApprox) {
+      drawApproxZone(miniMapInstance, [art.lat, art.lng], zoneRadius, '#9b5de5');
+    } else {
+      L.circle([art.lat, art.lng], {
+        radius: zoneRadius,
+        color: '#2ec4b6',
+        fillColor: '#2ec4b6',
+        fillOpacity: 0.18,
+        weight: 2.5
+      }).addTo(miniMapInstance);
+    }
   }
 
   if (!done) {
