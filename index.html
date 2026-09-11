@@ -7,7 +7,7 @@
   <meta name="description" content="Hunt down street art and murals hidden across Sheung Wan, Hong Kong." />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=12" />
+  <link rel="stylesheet" href="css/style.css?v=19" />
 </head>
 <body>
 
@@ -45,7 +45,7 @@
       <button id="gallery-toggle" class="quest-panel-icon-btn" title="View gallery" aria-label="View gallery">🖼️</button>
       <button id="close-quest-panel" class="quest-panel-close">×</button>
     </div>
-    <button id="play-mode-pill" class="play-mode-pill">📋 List order ⌄</button>
+    <button id="play-mode-pill" class="play-mode-pill">⚙️ Filters ⌄</button>
     <div id="quest-list" class="quest-list"></div>
   </div>
 
@@ -118,22 +118,16 @@
       <div class="welcome-logo">HOW DO YOU <span>WANT TO PLAY?</span></div>
       <p class="welcome-city">Tune your hunt</p>
 
-      <div class="play-settings-heading">Sort quests by</div>
-      <div class="play-mode-list">
-        <button class="play-mode-option" data-mode="nearest">
-          <span class="play-mode-option-icon">📍</span>
-          <span class="play-mode-option-text">
-            <strong>Nearest first</strong>
-            Sort by distance from you
-          </span>
-        </button>
+      <p class="settings-note">Only want to see certain art? Filter by artist, type, or both.</p>
+      <div class="narrow-filter-list">
         <div class="artist-option-wrap opt-option-wrap">
-          <button class="play-mode-option" data-mode="artist">
-            <span class="play-mode-option-icon">🎨</span>
-            <span class="play-mode-option-text">
-              <strong>By artist</strong>
-              Pick one artist to focus on
+          <button id="artist-filter-btn" class="narrow-filter-btn">
+            <span class="narrow-filter-icon">🎨</span>
+            <span class="narrow-filter-text">
+              <strong>Artist</strong>
+              <span class="narrow-value" id="artist-filter-value">All artists</span>
             </span>
+            <span class="narrow-filter-caret">⌄</span>
           </button>
           <div id="artist-picker" class="opt-picker hidden">
             <input type="text" id="artist-picker-search" class="opt-picker-search" placeholder="Search artist…" />
@@ -141,30 +135,30 @@
           </div>
         </div>
         <div class="type-option-wrap opt-option-wrap">
-          <button class="play-mode-option" data-mode="type">
-            <span class="play-mode-option-icon">🖼️</span>
-            <span class="play-mode-option-text">
-              <strong>By type</strong>
-              Pick one type to focus on
+          <button id="type-filter-btn" class="narrow-filter-btn">
+            <span class="narrow-filter-icon">🖼️</span>
+            <span class="narrow-filter-text">
+              <strong>Type</strong>
+              <span class="narrow-value" id="type-filter-value">All types</span>
             </span>
+            <span class="narrow-filter-caret">⌄</span>
           </button>
           <div id="type-picker" class="opt-picker hidden">
             <div id="type-picker-list" class="opt-picker-list"></div>
           </div>
         </div>
-        <button class="play-mode-option" data-mode="shuffle">
-          <span class="play-mode-option-icon">🎲</span>
-          <span class="play-mode-option-text">
-            <strong>Surprise me</strong>
-            Random order
-          </span>
-        </button>
       </div>
 
-      <div class="play-settings-heading">Challenge level</div>
+      <div class="play-settings-heading">Location precision</div>
       <div class="precision-toggle-row">
-        <button class="precision-option" data-precision="exact">🎯 Exact pin</button>
-        <button class="precision-option" data-precision="approx">🌫️ Approx. zone</button>
+        <button class="precision-option" data-precision="exact">
+          <span class="precision-option-title">🎯 Precise</span>
+          <span class="precision-option-sub">Exact location</span>
+        </button>
+        <button class="precision-option" data-precision="approx">
+          <span class="precision-option-title">🌫️ Approximate</span>
+          <span class="precision-option-sub">Neighborhood</span>
+        </button>
       </div>
 
       <button id="play-mode-done" class="play-mode-done">Done</button>
@@ -204,6 +198,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/data.js"></script>
-  <script src="js/app.js?v=12"></script>
+  <script src="js/app.js?v=19"></script>
 </body>
 </html>

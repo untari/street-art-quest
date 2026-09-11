@@ -35,17 +35,10 @@ let userCircle = null;
 let trackingLine = null;
 let activeQuestId = null; // id of the currently glowing pin — re-render when it moves
 
-const PLAY_MODE_KEY = 'saq_play_mode';
-const PLAY_MODES = {
-  nearest: { icon: '📍', label: 'Nearest first' },
-  artist:  { icon: '🎨', label: 'By artist' },
-  type:    { icon: '🖼️', label: 'By type' },
-  shuffle: { icon: '🎲', label: 'Surprise me' },
-  default: { icon: '📋', label: 'List order' }
-};
-let playMode = localStorage.getItem(PLAY_MODE_KEY);
+// Sort is no longer a choice — always nearest-first once your location is
+// known (falls back to natural order until then). Artist/type stay as
+// independent filters (activeArtist / activeFilter) that combine with it.
 let nearestOrigin = null;
-let shuffleOrderIds = null;
 
 const PRECISION_KEY = 'saq_precision';
 let precision = localStorage.getItem(PRECISION_KEY) || 'exact';
@@ -59,18 +52,15 @@ let huntMode = localStorage.getItem(HUNT_MODE_KEY) || 'explore';
 const ARTIST_KEY = 'saq_artist';
 let activeArtist = localStorage.getItem(ARTIST_KEY) || null; // null = every artist
 
+// The "current" quest is the closest un-found piece that matches any active
+// artist/type filter (a no-op filter in Quest mode — always cleared on entry)
+// — falling back to any un-found piece if the filter matches nothing, and to
+// natural order if location isn't known yet. The glowing pin is always
+// somewhere you can actually walk to.
 function getActiveQuest() {
-  // Explore mode: the "current" quest is just the closest one you can still find,
-  // so the glowing pin is always somewhere you can actually walk to.
-  if (huntMode === 'explore' && nearestOrigin) {
-    const unfound = allArtworks.filter(a => !isCompleted(a.id));
-    const pool = unfound.filter(passesExploreFilters);
-    return [...(pool.length ? pool : unfound)].sort((a, b) =>
-      getDistance(nearestOrigin.lat, nearestOrigin.lng, a.lat, a.lng) -
-      getDistance(nearestOrigin.lat, nearestOrigin.lng, b.lat, b.lng)
-    )[0] || null;
-  }
-  return orderForPlayMode(allArtworks).find(a => !isCompleted(a.id)) || null;
+  const unfound = allArtworks.filter(a => !isCompleted(a.id));
+  const pool = unfound.filter(passesExploreFilters);
+  return sortByDistance(pool.length ? pool : unfound)[0] || null;
 }
 
 function isQuestVisible(art) {
@@ -233,11 +223,18 @@ function closePanel() {
 
 // ─── Quest panel ──────────────────────────────────
 
+// opening the list is the "ready to hunt" moment — a natural place to ask for
+// location once, so nearest-first sorting can kick in without a manual step
+let locationRequested = false;
+function maybeRequestLocation() {
+  if (locationRequested || nearestOrigin || !navigator.geolocation) return;
+  locationRequested = true;
+  resolveNearestOrigin(refreshQuestUI);
+}
+
 function openQuestPanel() {
   closePanel();
-  if (playMode === 'shuffle' && !shuffleOrderIds) {
-    shuffleOrderIds = shuffleArray(allArtworks.map(a => a.id));
-  }
+  maybeRequestLocation();
   renderQuestPanelBody();
   document.getElementById('quest-panel').classList.add('open');
 }
@@ -246,41 +243,22 @@ function closeQuestPanel() {
   document.getElementById('quest-panel').classList.remove('open');
 }
 
-function groupLabelFor(art) {
-  // narrowed to one artist/type — a single header naming it sits above the list
-  if (activeArtist) return activeArtist;
-  if (activeFilter !== 'all') return activeFilter;
-  if (playMode === 'artist') return art.artist || 'Unknown';
-  if (playMode === 'type') return art.type;
-  return null;
+// artist/type are plain filters now (not sort modes), so there's at most one
+// combined label for the whole list — never a per-item group to sort by
+function groupLabelFor() {
+  const parts = [];
+  if (activeArtist) parts.push(activeArtist);
+  if (activeFilter !== 'all') parts.push(activeFilter);
+  return parts.length ? parts.join(' · ') : null;
 }
 
-function orderForPlayMode(list) {
-  if (playMode === 'nearest' && nearestOrigin) {
-    return [...list].sort((a, b) =>
-      getDistance(nearestOrigin.lat, nearestOrigin.lng, a.lat, a.lng) -
-      getDistance(nearestOrigin.lat, nearestOrigin.lng, b.lat, b.lng)
-    );
-  }
-  if ((playMode === 'artist' || playMode === 'type') && !activeArtist && activeFilter === 'all') {
-    return [...list].sort((a, b) => {
-      const groupCompare = groupLabelFor(a).localeCompare(groupLabelFor(b));
-      if (groupCompare !== 0) return groupCompare;
-      if (nearestOrigin) {
-        return getDistance(nearestOrigin.lat, nearestOrigin.lng, a.lat, a.lng) -
-               getDistance(nearestOrigin.lat, nearestOrigin.lng, b.lat, b.lng);
-      }
-      return 0;
-    });
-  }
-  if (playMode === 'shuffle' && shuffleOrderIds) {
-    const rank = id => {
-      const i = shuffleOrderIds.indexOf(id);
-      return i === -1 ? Infinity : i;
-    };
-    return [...list].sort((a, b) => rank(a.id) - rank(b.id));
-  }
-  return list;
+// Nearest-first once we know where you are; natural (data.js) order otherwise.
+function sortByDistance(list) {
+  if (!nearestOrigin) return list;
+  return [...list].sort((a, b) =>
+    getDistance(nearestOrigin.lat, nearestOrigin.lng, a.lat, a.lng) -
+    getDistance(nearestOrigin.lat, nearestOrigin.lng, b.lat, b.lng)
+  );
 }
 
 function renderQuestList() {
@@ -288,41 +266,47 @@ function renderQuestList() {
   const list = document.getElementById('quest-list');
   list.innerHTML = '';
 
-  const ordered = orderForPlayMode(allArtworks);
+  const ordered = sortByDistance(allArtworks);
 
   const visible = ordered
     .filter(isQuestVisible)
     .filter(passesExploreFilters);
 
+  const groupLabel = groupLabelFor();
+
   if (visible.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'quest-no-results';
-    empty.textContent = activeArtist
-      ? `No quests by ${activeArtist}`
-      : `No ${activeFilter} quests`;
+    empty.textContent = groupLabel ? `No quests match: ${groupLabel}` : 'No quests found';
     list.appendChild(empty);
   }
 
-  let lastGroup = null;
-  visible.forEach(art => {
-    const groupLabel = groupLabelFor(art);
-    if (groupLabel !== null && groupLabel !== lastGroup) {
-      const header = document.createElement('div');
-      header.className = 'quest-group-header';
-      header.textContent = groupLabel;
-      list.appendChild(header);
-      lastGroup = groupLabel;
-    }
+  // one combined header for the whole list when an artist and/or type filter
+  // is active, with a one-tap way to clear it — never a per-item group anymore
+  if (groupLabel !== null) {
+    const header = document.createElement('div');
+    header.className = 'quest-group-header';
+    header.innerHTML = `<span>${groupLabel}</span><button class="quest-group-clear" title="Clear filter" aria-label="Clear filter">✕</button>`;
+    header.querySelector('.quest-group-clear').addEventListener('click', () => {
+      clearActiveArtist();
+      clearActiveType();
+      syncFilterBar();
+      syncNarrowControls();
+      refreshQuestUI();
+    });
+    list.appendChild(header);
+  }
 
+  visible.forEach(art => {
     const num = allArtworks.indexOf(art) + 1;
     const done = completed.includes(art.id);
     // quest mode keeps the piece a mystery until check-in — show only its type.
-    // everywhere else, lead with the name so "by artist" / "by type" lists read right.
+    // everywhere else, lead with the name so a narrowed-down list reads right.
     const reveal = huntMode !== 'quest' || done;
     const area = art.address.split(',')[0];
-    // drop details the list is already organised by (a header or the pill shows them)
-    const typeIsRedundant = playMode === 'type' || (activeFilter && activeFilter !== 'all');
-    const artistIsRedundant = playMode === 'artist';
+    // drop details the header above already shows
+    const typeIsRedundant = activeFilter !== 'all';
+    const artistIsRedundant = !!activeArtist;
     const hasArtist = art.artist && art.artist !== 'Unknown';
     const primary = reveal ? art.title : art.type;
     const secondary = reveal
@@ -428,15 +412,6 @@ function initGalleryToggle() {
 
 // ─── Play mode ────────────────────────────────────
 
-function shuffleArray(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 function resolveNearestOrigin(callback) {
   if (userMarker) {
     const ll = userMarker.getLatLng();
@@ -455,17 +430,13 @@ function resolveNearestOrigin(callback) {
   );
 }
 
-// the pill names how the list is organised (and taps to change it); the actual
-// pick — which artist, which type — is shown by the list's own header instead
+// sort is automatic now, so the pill's only job is the artist/type filter —
+// same combined label as the quest list's own header (groupLabelFor)
 function updatePlayModePill() {
   const pill = document.getElementById('play-mode-pill');
   if (!pill) return;
-  let mode;
-  if (activeArtist) mode = 'artist';
-  else if (activeFilter && activeFilter !== 'all') mode = 'type';
-  else mode = playMode && PLAY_MODES[playMode] ? playMode : 'default';
-  const { icon, label } = PLAY_MODES[mode];
-  pill.textContent = `${icon} ${label} ⌄`;
+  const label = groupLabelFor();
+  pill.textContent = label ? `🎨 ${label} ⌄` : '⚙️ Filters ⌄';
 }
 
 function refreshQuestUI() {
@@ -479,7 +450,7 @@ function openPlayModeBackdrop() {
   document.getElementById('restart-confirm').classList.add('hidden');
   closeArtistPicker();  // floating dropdowns always start collapsed
   closeTypePicker();
-  syncPlayOptionState();
+  syncNarrowControls();
   document.getElementById('play-mode-backdrop').classList.remove('hidden');
 }
 
@@ -490,15 +461,20 @@ function closePlayModeBackdrop() {
   document.getElementById('play-mode-backdrop').classList.add('hidden');
 }
 
-function syncPlayOptionState() {
-  const typeActive = activeFilter && activeFilter !== 'all';
-  document.querySelectorAll('.play-mode-option').forEach(btn => {
-    let on;
-    if (btn.dataset.mode === 'artist') on = !!activeArtist;
-    else if (btn.dataset.mode === 'type') on = !!typeActive;
-    else on = !activeArtist && !typeActive && playMode === btn.dataset.mode;
-    btn.classList.toggle('active', on);
-  });
+// keep the "Artist" / "Type" narrow-down rows in the settings sheet, and the
+// pill above the quest list, showing the current pick (or "All …"/unfiltered)
+function syncNarrowControls() {
+  const artistBtn = document.getElementById('artist-filter-btn');
+  if (artistBtn) {
+    document.getElementById('artist-filter-value').textContent = activeArtist || 'All artists';
+    artistBtn.classList.toggle('active', !!activeArtist);
+  }
+  const typeBtn = document.getElementById('type-filter-btn');
+  if (typeBtn) {
+    document.getElementById('type-filter-value').textContent = activeFilter !== 'all' ? activeFilter : 'All types';
+    typeBtn.classList.toggle('active', activeFilter !== 'all');
+  }
+  updatePlayModePill();
 }
 
 function resetProgress() {
@@ -510,37 +486,9 @@ function resetProgress() {
   renderQuestPanelBody();
 }
 
-function setPlayMode(mode) {
-  playMode = mode;
-  localStorage.setItem(PLAY_MODE_KEY, mode);
-  clearActiveArtist();
-  clearActiveType();
-  closeArtistPicker();
-  closeTypePicker();
-  updatePlayModePill();
-  syncPlayOptionState();
-
-  if (mode === 'nearest') {
-    resolveNearestOrigin(refreshQuestUI);
-  } else if (mode === 'artist' || mode === 'type') {
-    refreshQuestUI();
-    if (!nearestOrigin) resolveNearestOrigin(refreshQuestUI);
-  } else if (mode === 'shuffle') {
-    shuffleOrderIds = shuffleArray(allArtworks.map(a => a.id));
-    refreshQuestUI();
-  } else {
-    refreshQuestUI();
-  }
-}
-
 function initPlayMode() {
-  document.querySelectorAll('.play-mode-option').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.dataset.mode === 'artist') { toggleArtistPicker(); return; }
-      if (btn.dataset.mode === 'type') { toggleTypePicker(); return; }
-      setPlayMode(btn.dataset.mode);
-    });
-  });
+  document.getElementById('artist-filter-btn').addEventListener('click', toggleArtistPicker);
+  document.getElementById('type-filter-btn').addEventListener('click', toggleTypePicker);
   // also opens the list — a no-op if it's already open (e.g. tweaking settings mid-hunt)
   document.getElementById('play-mode-done').addEventListener('click', () => {
     closePlayModeBackdrop();
@@ -621,18 +569,14 @@ function buildArtistPicker() {
   }
 }
 
+// pure filter now — combines with whatever sort is active, doesn't touch it
 function selectArtist(name) {
   activeArtist = name || null;
   if (activeArtist) localStorage.setItem(ARTIST_KEY, activeArtist);
   else localStorage.removeItem(ARTIST_KEY);
-  clearActiveType();
-
-  playMode = 'artist';
-  localStorage.setItem(PLAY_MODE_KEY, 'artist');
 
   closeArtistPicker();
-  updatePlayModePill();
-  syncPlayOptionState();
+  syncNarrowControls();
   refreshQuestUI();
 }
 
@@ -674,17 +618,13 @@ function buildTypePicker() {
   types.forEach(t => addItem(t, t));
 }
 
+// pure filter now — combines with whatever sort is active, doesn't touch it
 function selectType(type) {
   activeFilter = type || 'all';
-  clearActiveArtist();
   syncFilterBar();
 
-  playMode = 'type';
-  localStorage.setItem(PLAY_MODE_KEY, 'type');
-
   closeTypePicker();
-  updatePlayModePill();
-  syncPlayOptionState();
+  syncNarrowControls();
   refreshQuestUI();
 }
 
@@ -714,7 +654,7 @@ function applyHuntMode() {
   if (huntMode === 'quest') {
     clearActiveType();
     clearActiveArtist();
-    updatePlayModePill();
+    syncNarrowControls();
   }
 
   document.querySelectorAll('.mode-option, .quest-nav-btn[data-mode-choice]').forEach(b => {
@@ -728,7 +668,7 @@ function setHuntMode(mode) {
   closeArtistPicker();
   closeTypePicker();
   applyHuntMode();
-  syncPlayOptionState();
+  syncNarrowControls();
   refreshQuestUI();
 }
 
@@ -1053,15 +993,12 @@ function initFilters() {
     container.appendChild(btn);
   });
 
+  // same code path as the settings-sheet type picker — one place owns
+  // "the type filter changed", so the header bar, the sheet, and the quest
+  // list's clear-filter button all stay in sync
   container.querySelectorAll('.filter-btn').forEach(btn => {
     btn.onclick = () => {
-      container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeFilter = btn.dataset.type;
-      clearActiveArtist();
-      updatePlayModePill();
-      renderMarkers();
-      renderQuestPanelBody();
+      selectType(btn.dataset.type);
       closePanel();
     };
   });
