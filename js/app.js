@@ -26,7 +26,7 @@ L.tileLayer(BASEMAP_URL, {
 
 let allArtworks = [];
 let markers = [];
-let activeFilter = 'all';
+let activeTypes = []; // multi-select: [] = every type, otherwise an OR match
 let activeQuest = null;
 let miniMapInstance = null;
 let checkinFailCount = 0;
@@ -37,7 +37,7 @@ let activeQuestId = null; // id of the currently glowing pin — re-render when 
 
 // Sort is no longer a choice — always nearest-first once your location is
 // known (falls back to natural order until then). Artist/type stay as
-// independent filters (activeArtist / activeFilter) that combine with it.
+// independent filters (activeArtists / activeTypes) that combine with it.
 let nearestOrigin = null;
 
 const PRECISION_KEY = 'saq_precision';
@@ -50,7 +50,11 @@ const HUNT_MODE_KEY = 'saq_hunt_mode';
 let huntMode = localStorage.getItem(HUNT_MODE_KEY) || 'explore';
 
 const ARTIST_KEY = 'saq_artist';
-let activeArtist = localStorage.getItem(ARTIST_KEY) || null; // null = every artist
+// multi-select: [] = every artist, otherwise an OR match against this list
+let activeArtists = (() => {
+  try { return JSON.parse(localStorage.getItem(ARTIST_KEY)) || []; }
+  catch { return []; }
+})();
 
 // The "current" quest is the closest un-found piece that matches any active
 // artist/type filter (a no-op filter in Quest mode — always cleared on entry)
@@ -72,8 +76,8 @@ function isQuestVisible(art) {
 // Quest mode ignores them — isQuestVisible already shows just the live quest.
 function passesExploreFilters(art) {
   if (huntMode === 'quest') return true;
-  if (activeFilter !== 'all' && art.type !== activeFilter) return false;
-  if (activeArtist && art.artist !== activeArtist) return false;
+  if (activeTypes.length && !activeTypes.includes(art.type)) return false;
+  if (activeArtists.length && !activeArtists.includes(art.artist)) return false;
   return true;
 }
 
@@ -235,9 +239,11 @@ function renderMarkers() {
 
   const filtered = allArtworks.filter(passesExploreFilters);
   const foundCount = filtered.filter(a => isCompleted(a.id)).length;
-  const label = activeArtist
-    ? `by ${activeArtist} found`
-    : activeFilter === 'all' ? 'found' : `${activeFilter} quests found`;
+  const artistLabel = artistFilterLabel();
+  const typeLabel = typeFilterLabel();
+  const label = artistLabel
+    ? `by ${artistLabel} found`
+    : typeLabel ? `${typeLabel} quests found` : 'found';
   document.getElementById('count').innerHTML =
     `<strong>${foundCount}</strong> of ${filtered.length} ${label} · Sheung Wan, HK`;
 }
@@ -270,12 +276,25 @@ function closeQuestPanel() {
   document.getElementById('quest-panel').classList.remove('open');
 }
 
+// names when there are few enough to read at a glance, a count once it'd wrap
+function artistFilterLabel() {
+  if (!activeArtists.length) return null;
+  return activeArtists.length <= 2 ? activeArtists.join(' & ') : `${activeArtists.length} artists`;
+}
+
+function typeFilterLabel() {
+  if (!activeTypes.length) return null;
+  return activeTypes.length <= 2 ? activeTypes.join(' & ') : `${activeTypes.length} types`;
+}
+
 // artist/type are plain filters now (not sort modes), so there's at most one
 // combined label for the whole list — never a per-item group to sort by
 function groupLabelFor() {
   const parts = [];
-  if (activeArtist) parts.push(activeArtist);
-  if (activeFilter !== 'all') parts.push(activeFilter);
+  const artistLabel = artistFilterLabel();
+  if (artistLabel) parts.push(artistLabel);
+  const typeLabel = typeFilterLabel();
+  if (typeLabel) parts.push(typeLabel);
   return parts.length ? parts.join(' · ') : null;
 }
 
@@ -332,8 +351,12 @@ function renderQuestList() {
     const reveal = huntMode !== 'quest' || done;
     const area = art.address.split(',')[0];
     // drop details the header above already shows
-    const typeIsRedundant = activeFilter !== 'all';
-    const artistIsRedundant = !!activeArtist;
+    // only redundant when exactly one type is picked — with several picked,
+    // each row's actual type still varies and is worth showing
+    const typeIsRedundant = activeTypes.length === 1;
+    // only redundant when exactly one artist is picked — with several picked,
+    // each row's actual artist still varies and is worth showing
+    const artistIsRedundant = activeArtists.length === 1;
     const hasArtist = art.artist && art.artist !== 'Unknown';
     const primary = reveal ? art.title : art.type;
     const secondary = reveal
@@ -512,13 +535,13 @@ function closePlayModeBackdrop() {
 function syncNarrowControls() {
   const artistBtn = document.getElementById('artist-filter-btn');
   if (artistBtn) {
-    document.getElementById('artist-filter-value').textContent = activeArtist || 'All artists';
-    artistBtn.classList.toggle('active', !!activeArtist);
+    document.getElementById('artist-filter-value').textContent = artistFilterLabel() || 'All artists';
+    artistBtn.classList.toggle('active', activeArtists.length > 0);
   }
   const typeBtn = document.getElementById('type-filter-btn');
   if (typeBtn) {
-    document.getElementById('type-filter-value').textContent = activeFilter !== 'all' ? activeFilter : 'All types';
-    typeBtn.classList.toggle('active', activeFilter !== 'all');
+    document.getElementById('type-filter-value').textContent = typeFilterLabel() || 'All types';
+    typeBtn.classList.toggle('active', activeTypes.length > 0);
   }
   updatePlayModePill();
 }
@@ -558,19 +581,23 @@ function initPlayMode() {
 // ─── Filter pickers (artist / type) ───────────────
 
 function clearActiveArtist() {
-  activeArtist = null;
+  activeArtists = [];
   localStorage.removeItem(ARTIST_KEY);
 }
 
 function clearActiveType() {
-  activeFilter = 'all';
+  activeTypes = [];
   syncFilterBar();
 }
 
-// keep the header type-filter bar's highlight in step with activeFilter
+// keep the header type-filter bar's highlight in step with activeTypes —
+// multi-select, so several chips (plus "All" when none are picked) can be active
 function syncFilterBar() {
   document.querySelectorAll('#filters .filter-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.type === activeFilter);
+    const isActive = b.dataset.type === 'all'
+      ? activeTypes.length === 0
+      : activeTypes.includes(b.dataset.type);
+    b.classList.toggle('active', isActive);
   });
 }
 
@@ -594,18 +621,18 @@ function buildArtistPicker() {
 
   listEl.innerHTML = '';
 
-  const addItem = (label, value) => {
+  const addItem = (label, isActive, onClick) => {
     const b = document.createElement('button');
-    b.className = 'opt-picker-item' + (value === activeArtist ? ' active' : '');
+    b.className = 'opt-picker-item' + (isActive ? ' active' : '');
     b.textContent = label;
-    b.addEventListener('click', () => selectArtist(value));
+    b.addEventListener('click', onClick);
     listEl.appendChild(b);
   };
 
-  if (!q) addItem('All artists', null);
+  if (!q) addItem('All artists', activeArtists.length === 0, selectAllArtists);
   artists
     .filter(name => !q || name.toLowerCase().includes(q))
-    .forEach(name => addItem(name, name));
+    .forEach(name => addItem(name, activeArtists.includes(name), () => toggleArtist(name)));
 
   if (!listEl.children.length) {
     const empty = document.createElement('div');
@@ -615,13 +642,21 @@ function buildArtistPicker() {
   }
 }
 
-// pure filter now — combines with whatever sort is active, doesn't touch it
-function selectArtist(name) {
-  activeArtist = name || null;
-  if (activeArtist) localStorage.setItem(ARTIST_KEY, activeArtist);
-  else localStorage.removeItem(ARTIST_KEY);
+// multi-select: tapping a name adds/removes it, so the picker stays open
+// (only the outside-tap handler closes it) instead of closing on the first
+// pick the way the old single-select version did
+function toggleArtist(name) {
+  const i = activeArtists.indexOf(name);
+  if (i === -1) activeArtists.push(name); else activeArtists.splice(i, 1);
+  localStorage.setItem(ARTIST_KEY, JSON.stringify(activeArtists));
+  buildArtistPicker();
+  syncNarrowControls();
+  refreshQuestUI();
+}
 
-  closeArtistPicker();
+function selectAllArtists() {
+  clearActiveArtist();
+  buildArtistPicker();
   syncNarrowControls();
   refreshQuestUI();
 }
@@ -652,24 +687,31 @@ function buildTypePicker() {
   const types = [...new Set(allArtworks.map(a => a.type).filter(Boolean))].sort();
   listEl.innerHTML = '';
 
-  const addItem = (label, value) => {
+  const addItem = (label, isActive, onClick) => {
     const b = document.createElement('button');
-    b.className = 'opt-picker-item' + (value === activeFilter ? ' active' : '');
+    b.className = 'opt-picker-item' + (isActive ? ' active' : '');
     b.textContent = label;
-    b.addEventListener('click', () => selectType(value));
+    b.addEventListener('click', onClick);
     listEl.appendChild(b);
   };
 
-  addItem('All types', 'all');
-  types.forEach(t => addItem(t, t));
+  addItem('All types', activeTypes.length === 0, () => selectType('all'));
+  types.forEach(t => addItem(t, activeTypes.includes(t), () => selectType(t)));
 }
 
-// pure filter now — combines with whatever sort is active, doesn't touch it
+// multi-select, same as artist: 'all' clears the selection, anything else
+// toggles in/out. Also the header filter bar's click handler, so it and the
+// sheet's picker share one "the type filter changed" code path. Doesn't
+// auto-close the picker — same reasoning as toggleArtist.
 function selectType(type) {
-  activeFilter = type || 'all';
+  if (!type || type === 'all') {
+    activeTypes = [];
+  } else {
+    const i = activeTypes.indexOf(type);
+    if (i === -1) activeTypes.push(type); else activeTypes.splice(i, 1);
+  }
   syncFilterBar();
-
-  closeTypePicker();
+  buildTypePicker();
   syncNarrowControls();
   refreshQuestUI();
 }
@@ -1039,9 +1081,10 @@ function initFilters() {
     btn.dataset.type = type;
     btn.textContent = type;
     btn.style.background = typeColor(type);
-    if (type === activeFilter) btn.classList.add('active');
+    if (activeTypes.includes(type)) btn.classList.add('active');
     container.appendChild(btn);
   });
+  syncFilterBar(); // also corrects the static "All" chip's active state
 
   // same code path as the settings-sheet type picker — one place owns
   // "the type filter changed", so the header bar, the sheet, and the quest
