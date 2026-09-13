@@ -7,7 +7,7 @@
   <meta name="description" content="Hunt down street art and murals hidden across Sheung Wan, Hong Kong." />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=33" />
+  <link rel="stylesheet" href="css/style.css?v=38" />
 </head>
 <body>
 
@@ -70,6 +70,7 @@
       </svg>
       Change play mode ⌄
     </button>
+    <div id="quest-list-summary" class="filter-summary hidden"></div>
     <div id="quest-list" class="quest-list"></div>
   </div>
 
@@ -185,6 +186,8 @@
         </div>
       </div>
 
+      <p id="filter-summary" class="filter-summary hidden"></p>
+
       <div class="play-settings-heading">Location precision</div>
       <div class="precision-toggle-row">
         <button class="precision-option" data-precision="exact">
@@ -245,6 +248,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/data.js"></script>
-  <script src="js/app.js?v=33"></script>
+  <script src="js/app.js?v=38"></script>
 </body>
 </html>

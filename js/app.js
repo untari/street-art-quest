@@ -319,28 +319,13 @@ function renderQuestList() {
     .filter(passesExploreFilters);
 
   const groupLabel = groupLabelFor();
+  renderFilterSummary(document.getElementById('quest-list-summary'), { withClear: true, funMode: true });
 
   if (visible.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'quest-no-results';
     empty.textContent = groupLabel ? `No quests match: ${groupLabel}` : 'No quests found';
     list.appendChild(empty);
-  }
-
-  // one combined header for the whole list when an artist and/or type filter
-  // is active, with a one-tap way to clear it — never a per-item group anymore
-  if (groupLabel !== null) {
-    const header = document.createElement('div');
-    header.className = 'quest-group-header';
-    header.innerHTML = `<span>${groupLabel}</span><button class="quest-group-clear" title="Clear filter" aria-label="Clear filter">✕</button>`;
-    header.querySelector('.quest-group-clear').addEventListener('click', () => {
-      clearActiveArtist();
-      clearActiveType();
-      syncFilterBar();
-      syncNarrowControls();
-      refreshQuestUI();
-    });
-    list.appendChild(header);
   }
 
   visible.forEach(art => {
@@ -543,7 +528,96 @@ function syncNarrowControls() {
     document.getElementById('type-filter-value').textContent = typeFilterLabel() || 'All types';
     typeBtn.classList.toggle('active', activeTypes.length > 0);
   }
+  updateFilterSummary();
   updatePlayModePill();
+}
+
+// one-line recap of the combined filter state — "Showing Mural · by Xeva —
+// 2 pieces" — hidden entirely when nothing's picked. Built with textContent,
+// not innerHTML, so an "&" in a name can't be misread as an HTML entity.
+// shared by the settings sheet and the quest list — same "Artist: X (n),
+// Y (n)" / "Type: A (n)" recap, optionally with a one-tap clear-all button
+// (the quest list has one so you don't have to reopen the sheet just to
+// reset; the sheet doesn't need one since "All artists"/"All types" already
+// does that from inside each picker)
+function renderFilterSummary(container, { withClear = false, funMode = false } = {}) {
+  if (!container) return;
+  // in fun mode (the quest list) the header chip bar already shows the active
+  // type, so repeating it here would be redundant — only artists get a line
+  const hasContent = activeArtists.length > 0 || (!funMode && activeTypes.length > 0);
+  if (!hasContent) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = '';
+  const lines = document.createElement('div');
+  lines.className = 'filter-summary-lines';
+  if (funMode) {
+    if (activeArtists.length) lines.appendChild(summaryLineFun('🔍 Tracking', activeArtists, tallyArtistsInContext(activeArtists)));
+  } else {
+    if (activeArtists.length) lines.appendChild(summaryLine('Artist', activeArtists, tallyArtistsInContext(activeArtists)));
+    if (activeTypes.length) lines.appendChild(summaryLine('Type', activeTypes, tallyTypesInContext(activeTypes)));
+  }
+  container.appendChild(lines);
+
+  if (withClear) {
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'filter-summary-clear';
+    clearBtn.title = 'Clear filters';
+    clearBtn.setAttribute('aria-label', 'Clear filters');
+    clearBtn.textContent = '✕';
+    clearBtn.addEventListener('click', () => {
+      clearActiveArtist();
+      clearActiveType();
+      syncFilterBar();
+      syncNarrowControls();
+      refreshQuestUI();
+    });
+    container.appendChild(clearBtn);
+  }
+
+  container.classList.remove('hidden');
+}
+
+function updateFilterSummary() {
+  renderFilterSummary(document.getElementById('filter-summary'));
+}
+
+// one line of the filter summary: "Artist: Xeva (2), Alex Croft (1)" — each
+// selected name with its own piece count, built with textContent/createTextNode
+// (not innerHTML) so a name with "&" can't be misread as an HTML entity
+function summaryLine(label, names, counts) {
+  const line = document.createElement('div');
+  line.appendChild(document.createTextNode(`${label}: `));
+  names.forEach((name, i) => {
+    if (i > 0) line.appendChild(document.createTextNode(', '));
+    line.appendChild(document.createTextNode(`${name} `));
+    const strong = document.createElement('strong');
+    strong.textContent = `(${counts[name] || 0})`;
+    line.appendChild(strong);
+  });
+  return line;
+}
+
+// quest-list variant of summaryLine: each name gets a trailing count badge
+// (pill) instead of "(n)" text, for a punchier, less form-like look
+function summaryLineFun(label, names, counts) {
+  const line = document.createElement('div');
+  line.appendChild(document.createTextNode(`${label}: `));
+  names.forEach((name, i) => {
+    if (i > 0) line.appendChild(document.createTextNode(', '));
+    const chip = document.createElement('span');
+    chip.className = 'summary-name-chip';
+    chip.appendChild(document.createTextNode(name));
+    const badge = document.createElement('span');
+    badge.className = 'summary-count-badge';
+    badge.textContent = counts[name] || 0;
+    chip.appendChild(badge);
+    line.appendChild(chip);
+  });
+  return line;
 }
 
 function resetProgress() {
@@ -612,13 +686,45 @@ function toggleArtistPicker() {
   }
 }
 
+// how many artworks fall under each value of a given field, across ALL
+// pieces — used by the pickers, where every row should show its true total
+// regardless of what's currently selected elsewhere
+function tallyBy(field) {
+  const counts = {};
+  allArtworks.forEach(a => { if (a[field]) counts[a[field]] = (counts[a[field]] || 0) + 1; });
+  return counts;
+}
+
+// how many artworks match a selected artist/type NARROWED by whatever is
+// selected in the other category — e.g. picking Xeva + Mural should say how
+// many of Xeva's pieces are murals (possibly 0), not her total piece count,
+// so the summary tells you how much there is left to actually go find
+function tallyArtistsInContext(names) {
+  const counts = {};
+  names.forEach(name => {
+    counts[name] = allArtworks.filter(a =>
+      a.artist === name && (!activeTypes.length || activeTypes.includes(a.type))
+    ).length;
+  });
+  return counts;
+}
+
+function tallyTypesInContext(types) {
+  const counts = {};
+  types.forEach(type => {
+    counts[type] = allArtworks.filter(a =>
+      a.type === type && (!activeArtists.length || activeArtists.includes(a.artist))
+    ).length;
+  });
+  return counts;
+}
+
 function buildArtistPicker() {
   const listEl = document.getElementById('artist-picker-list');
   const search = document.getElementById('artist-picker-search');
   const q = (search.value || '').trim().toLowerCase();
 
-  const counts = {};
-  allArtworks.forEach(a => { if (a.artist) counts[a.artist] = (counts[a.artist] || 0) + 1; });
+  const counts = tallyBy('artist');
   const artists = Object.keys(counts).sort((a, b) => a.localeCompare(b));
 
   listEl.innerHTML = '';
@@ -696,8 +802,7 @@ function toggleTypePicker() {
 function buildTypePicker() {
   const listEl = document.getElementById('type-picker-list');
 
-  const counts = {};
-  allArtworks.forEach(a => { if (a.type) counts[a.type] = (counts[a.type] || 0) + 1; });
+  const counts = tallyBy('type');
   const types = Object.keys(counts).sort();
 
   listEl.innerHTML = '';

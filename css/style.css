@@ -439,21 +439,6 @@ header {
   color: var(--muted);
 }
 
-.quest-group-header {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 14px 20px 6px;
-  font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
-  text-transform: uppercase; color: var(--muted);
-}
-
-.quest-group-clear {
-  background: none; border: none; padding: 2px 4px;
-  font-size: 12px; font-weight: 800; color: var(--muted);
-  cursor: pointer; transition: color 0.15s;
-}
-
-.quest-group-clear:hover { color: var(--dark); }
-
 .quest-locked-footer {
   margin: 10px 16px 16px;
   padding: 14px 16px;
@@ -1375,6 +1360,44 @@ header {
 .settings-note {
   font-size: 12px; color: var(--muted); font-weight: 600;
   line-height: 1.5; text-align: left; margin-bottom: 12px;
+}
+
+.filter-summary {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  font-size: 12px; font-weight: 700; color: var(--dark);
+  line-height: 1.5; text-align: left;
+  background: rgba(46,196,182,0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: -6px 0 18px;
+}
+
+.filter-summary strong { color: var(--teal); }
+
+.filter-summary.hidden { display: none; }
+
+.filter-summary-lines { flex: 1; }
+
+.filter-summary-clear {
+  flex-shrink: 0;
+  background: none; border: none;
+  font-size: 13px; font-weight: 800; color: var(--muted);
+  cursor: pointer; padding: 0 2px; line-height: 1.5;
+  transition: color 0.15s;
+}
+
+.filter-summary-clear:hover { color: var(--dark); }
+
+/* same summary, dropped into the quest list under the pill instead of the sheet */
+#quest-list-summary { margin: 0 20px 14px; }
+
+.summary-name-chip { display: inline-flex; align-items: center; }
+
+.summary-count-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px; margin-left: 4px; padding: 0 4px;
+  border-radius: 999px; background: var(--teal); color: #fff;
+  font-size: 10px; font-weight: 800; line-height: 1;
 }
 
 .opt-option-wrap { position: relative; }
