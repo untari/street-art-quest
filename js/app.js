@@ -616,23 +616,16 @@ function buildArtistPicker() {
   const listEl = document.getElementById('artist-picker-list');
   const search = document.getElementById('artist-picker-search');
   const q = (search.value || '').trim().toLowerCase();
-  const artists = [...new Set(allArtworks.map(a => a.artist).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b));
+
+  const counts = {};
+  allArtworks.forEach(a => { if (a.artist) counts[a.artist] = (counts[a.artist] || 0) + 1; });
+  const artists = Object.keys(counts).sort((a, b) => a.localeCompare(b));
 
   listEl.innerHTML = '';
-
-  const addItem = (label, isActive, onClick) => {
-    const b = document.createElement('button');
-    b.className = 'opt-picker-item' + (isActive ? ' active' : '');
-    b.textContent = label;
-    b.addEventListener('click', onClick);
-    listEl.appendChild(b);
-  };
-
-  if (!q) addItem('All artists', activeArtists.length === 0, selectAllArtists);
+  if (!q) addPickerItem(listEl, 'All artists', allArtworks.length, activeArtists.length === 0, selectAllArtists);
   artists
     .filter(name => !q || name.toLowerCase().includes(q))
-    .forEach(name => addItem(name, activeArtists.includes(name), () => toggleArtist(name)));
+    .forEach(name => addPickerItem(listEl, name, counts[name], activeArtists.includes(name), () => toggleArtist(name)));
 
   if (!listEl.children.length) {
     const empty = document.createElement('div');
@@ -640,6 +633,24 @@ function buildArtistPicker() {
     empty.textContent = 'No artist matches';
     listEl.appendChild(empty);
   }
+}
+
+// shared by the artist and type pickers — a name/label on the left, how many
+// pieces it covers on the right. Built with textContent (not innerHTML) so
+// names with "&" or other characters (e.g. "Carol Mui & Rebecca T Lin") can't
+// break the markup.
+function addPickerItem(listEl, label, count, isActive, onClick) {
+  const b = document.createElement('button');
+  b.className = 'opt-picker-item' + (isActive ? ' active' : '');
+  const nameEl = document.createElement('span');
+  nameEl.textContent = label;
+  const countEl = document.createElement('span');
+  countEl.className = 'opt-picker-count';
+  countEl.textContent = count;
+  b.appendChild(nameEl);
+  b.appendChild(countEl);
+  b.addEventListener('click', onClick);
+  listEl.appendChild(b);
 }
 
 // multi-select: tapping a name adds/removes it, so the picker stays open
@@ -684,19 +695,14 @@ function toggleTypePicker() {
 
 function buildTypePicker() {
   const listEl = document.getElementById('type-picker-list');
-  const types = [...new Set(allArtworks.map(a => a.type).filter(Boolean))].sort();
+
+  const counts = {};
+  allArtworks.forEach(a => { if (a.type) counts[a.type] = (counts[a.type] || 0) + 1; });
+  const types = Object.keys(counts).sort();
+
   listEl.innerHTML = '';
-
-  const addItem = (label, isActive, onClick) => {
-    const b = document.createElement('button');
-    b.className = 'opt-picker-item' + (isActive ? ' active' : '');
-    b.textContent = label;
-    b.addEventListener('click', onClick);
-    listEl.appendChild(b);
-  };
-
-  addItem('All types', activeTypes.length === 0, () => selectType('all'));
-  types.forEach(t => addItem(t, activeTypes.includes(t), () => selectType(t)));
+  addPickerItem(listEl, 'All types', allArtworks.length, activeTypes.length === 0, () => selectType('all'));
+  types.forEach(t => addPickerItem(listEl, t, counts[t], activeTypes.includes(t), () => selectType(t)));
 }
 
 // multi-select, same as artist: 'all' clears the selection, anything else
@@ -1134,6 +1140,8 @@ async function loadApprovedSubmissions() {
 
   allArtworks = allArtworks.concat(community);
   initFilters();
+  buildArtistPicker(); // keep the sheet's counts/names current if it loaded before this resolved
+  buildTypePicker();
   renderMarkers();
 }
 
