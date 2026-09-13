@@ -677,6 +677,64 @@ header {
 
 .manual-checkin-btn:hover { opacity: 0.8; }
 
+.manual-checkin-panel {
+  margin: 10px 20px 0;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-radius: 10px;
+}
+
+.manual-checkin-panel.hidden { display: none; }
+
+.manual-checkin-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.coords-row { display: flex; gap: 8px; }
+
+.coords-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.coords-input:focus { outline: none; border-color: var(--teal); }
+
+.coords-confirm-btn {
+  flex-shrink: 0;
+  padding: 0 16px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.coords-confirm-btn:hover { opacity: 0.85; }
+
+.coords-status {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 700;
+}
+
 .unverified-tag {
   color: var(--muted);
   font-weight: 700;

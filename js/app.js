@@ -957,7 +957,17 @@ function openQuestCard(art) {
               </div>`
          }`
       : `<button id="checkin-btn" class="checkin-btn">📍 I'm here — Check In</button>
-         <div id="gps-status" class="gps-status"></div>`
+         <div id="gps-status" class="gps-status"></div>
+         <button id="no-gps-btn" class="manual-checkin-btn">No GPS? Check in another way</button>
+         <div id="manual-checkin-panel" class="manual-checkin-panel hidden">
+           <div class="manual-checkin-label">Paste your coordinates from Google Maps</div>
+           <div class="coords-row">
+             <input id="coords-input" class="coords-input" type="text" placeholder="e.g. 22.2866, 114.1503" />
+             <button id="coords-confirm-btn" class="coords-confirm-btn">Check</button>
+           </div>
+           <div id="coords-status" class="coords-status"></div>
+           <button id="skip-verify-btn" class="manual-checkin-btn">Skip — check in without a location</button>
+         </div>`
     }
   `;
 
@@ -997,6 +1007,11 @@ function openQuestCard(art) {
 
   if (!done) {
     document.getElementById('checkin-btn').addEventListener('click', attemptCheckin);
+    document.getElementById('no-gps-btn').addEventListener('click', () => {
+      document.getElementById('manual-checkin-panel').classList.toggle('hidden');
+    });
+    document.getElementById('coords-confirm-btn').addEventListener('click', attemptCoordsCheckin);
+    document.getElementById('skip-verify-btn').addEventListener('click', () => manualCheckin(activeQuest));
   } else if (nextQuest) {
     document.getElementById('next-quest-btn').addEventListener('click', () => openQuestCard(nextQuest));
   }
@@ -1122,10 +1137,12 @@ function showCheckinConfirm(art, { unverified } = {}) {
   document.getElementById('confirm-no-btn').addEventListener('click', () => openQuestCard(art));
 }
 
+// just explains why GPS didn't work — the always-visible "No GPS? Check in
+// manually" link (below the status area) is the single call-to-action now,
+// so this no longer injects its own duplicate button
 function offerManualCheckin(status, message) {
   if (!status) return;
-  status.innerHTML = `${message} <button id="manual-checkin-btn" class="manual-checkin-btn">Check in anyway (unverified)</button>`;
-  document.getElementById('manual-checkin-btn').addEventListener('click', () => manualCheckin(activeQuest));
+  status.textContent = message;
 }
 
 function maybeShowExtraHint() {
@@ -1175,6 +1192,43 @@ function attemptCheckin() {
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );
+}
+
+// pulls the first "lat, lng" decimal pair out of pasted text — matches a bare
+// "22.2866, 114.1503" (what Google Maps' "Copy coordinates" gives you) as
+// well as one embedded in a share URL like ".../@22.2866,114.1503,17z"
+function parseCoords(text) {
+  const match = (text || '').match(/(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)/);
+  if (!match) return null;
+  const lat = parseFloat(match[1]);
+  const lng = parseFloat(match[2]);
+  if (Number.isNaN(lat) || Number.isNaN(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat, lng };
+}
+
+// same proximity check as GPS check-in, just fed coordinates the user pasted
+// in instead of ones read from the device — so this still counts as verified
+function attemptCoordsCheckin() {
+  const input = document.getElementById('coords-input');
+  const status = document.getElementById('coords-status');
+  const coords = parseCoords(input.value);
+
+  if (!coords) {
+    status.textContent = "Couldn't read that — paste coordinates like 22.2866, 114.1503.";
+    return;
+  }
+
+  const dist = getDistance(coords.lat, coords.lng, activeQuest.lat, activeQuest.lng);
+  const radius = activeQuest.radius || 50;
+
+  if (dist <= radius) {
+    checkinFailCount = 0;
+    showCheckinConfirm(activeQuest);
+  } else {
+    checkinFailCount++;
+    status.textContent = `That's about ${Math.round(dist)}m away — get closer, or check in without a location below.`;
+    maybeShowExtraHint();
+  }
 }
 
 // ─── Filters ──────────────────────────────────────
