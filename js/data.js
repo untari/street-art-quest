@@ -8,7 +8,7 @@ const ARTWORKS = [
     photo: "",
     commissioned: true,
     address: "Graham Street at Hollywood Road, Central",
-    hint: "Blocky, candy-colored tong lau windows cover an entire wall — one of the most photographed murals in the city, right by the wet market stalls of Graham Street.",
+    hint: "Blocky, candy-colored tong lau windows cover an entire wall, one of the most photographed murals in the city, right by the wet market stalls of Graham Street.",
     radius: 60
   },
   {
@@ -20,7 +20,7 @@ const ARTWORKS = [
     photo: "",
     commissioned: false,
     address: "Near Po Hing Fong, Sheung Wan",
-    hint: "A tiny pixelated alien made of ceramic tiles clings to a wall above eye level — part of a French artist's secret worldwide 'invasion'. A few tiles nearby have vanished over the years, so look carefully.",
+    hint: "A tiny pixelated alien made of ceramic tiles clings to a wall above eye level, part of a French artist's secret worldwide 'invasion'. A few tiles nearby have vanished over the years, so look carefully.",
     radius: 40
   },
   {
@@ -56,7 +56,7 @@ const ARTWORKS = [
     photo: "",
     commissioned: true,
     address: "Kwong Fuk Ancestral Hall, 40 Tai Ping Shan Street, Sheung Wan",
-    hint: "Bold geometric patterns and prayer text wrap around a real ancestral hall run by the Tung Wah Group — look for the incense smoke drifting out the door.",
+    hint: "Bold geometric patterns and prayer text wrap around a real ancestral hall run by the Tung Wah Group. Look for the incense smoke drifting out the door.",
     radius: 55
   },
   {
@@ -68,7 +68,7 @@ const ARTWORKS = [
     photo: "",
     commissioned: true,
     address: "Universal Building, 5-13 New Street, Tai Ping Shan",
-    hint: "Hong Kong's concrete towers rise out of a leafy hillside on the side of an old tenement block — painted from the same Mid-Levels vantage point it depicts.",
+    hint: "Hong Kong's concrete towers rise out of a leafy hillside on the side of an old tenement block, painted from the same Mid-Levels vantage point it depicts.",
     radius: 60
   },
   {
@@ -116,7 +116,7 @@ const ARTWORKS = [
     photo: "",
     commissioned: false,
     address: "Sai Street, Sheung Wan",
-    hint: "A face is carved directly into the plaster and concrete of an old tong lau — no paint, just chiselled brick revealed layer by layer.",
+    hint: "A face is carved directly into the plaster and concrete of an old tong lau: no paint, just chiselled brick revealed layer by layer.",
     radius: 50
   },
   {
@@ -164,7 +164,7 @@ const ARTWORKS = [
     photo: "",
     commissioned: true,
     address: "Shing Wong Street at Hollywood Road, Sheung Wan",
-    hint: "What started as leaping koi fish has since been repainted into a rhino on this corner wall — ask a local how many versions they remember.",
+    hint: "What started as leaping koi fish has since been repainted into a rhino on this corner wall. Ask a local how many versions they remember.",
     radius: 50
   },
   {
@@ -212,7 +212,7 @@ const ARTWORKS = [
     photo: "",
     commissioned: true,
     address: "Alley behind 18 Upper Station Street, Sheung Wan",
-    hint: "A strange cross-sectioned creature — half specimen, half porcelain figure — hides in a narrow alley behind the street.",
+    hint: "A strange cross-sectioned creature (half specimen, half porcelain figure) hides in a narrow alley behind the street.",
     radius: 40
   },
   {

@@ -374,7 +374,7 @@ function renderQuestList() {
     if (remaining > 0) {
       const locked = document.createElement('div');
       locked.className = 'quest-locked-footer';
-      locked.textContent = `🔒 ${remaining} more quest${remaining > 1 ? 's' : ''} locked — check in here to unlock the next`;
+      locked.textContent = `🔒 ${remaining} more quest${remaining > 1 ? 's' : ''} locked. Check in here to unlock the next`;
       list.appendChild(locked);
     }
   }
@@ -389,7 +389,7 @@ function renderGallery() {
   if (!found.length) {
     const empty = document.createElement('div');
     empty.className = 'quest-no-results';
-    empty.textContent = 'Nothing found yet — go hunt!';
+    empty.textContent = 'Nothing found yet. Go hunt!';
     list.appendChild(empty);
     return;
   }
@@ -956,7 +956,7 @@ function openQuestCard(art) {
                 <div class="quest-all-done-text">You found all ${allArtworks.length} pieces across Sheung Wan. Nice work!</div>
               </div>`
          }`
-      : `<button id="checkin-btn" class="checkin-btn">📍 I'm here — Check In</button>
+      : `<button id="checkin-btn" class="checkin-btn">📍 Check In Here</button>
          <div id="gps-status" class="gps-status"></div>
          <button id="no-gps-btn" class="manual-checkin-btn">No GPS? Check in another way</button>
          <div id="manual-checkin-panel" class="manual-checkin-panel hidden">
@@ -966,7 +966,7 @@ function openQuestCard(art) {
              <button id="coords-confirm-btn" class="coords-confirm-btn">Check</button>
            </div>
            <div id="coords-status" class="coords-status"></div>
-           <button id="skip-verify-btn" class="manual-checkin-btn">Skip — check in without a location</button>
+           <button id="skip-verify-btn" class="manual-checkin-btn">Check in without a location</button>
          </div>`
     }
   `;
@@ -1099,7 +1099,7 @@ function completeQuest(art, { unverified } = {}) {
   celebrateFind(allDone);
   playCheckinFeedback(allDone);
   if (allDone) {
-    mascotSay('🏆 Hunt complete!', `You found all ${allArtworks.length} pieces — incredible work!`);
+    mascotSay('🏆 Hunt complete!', `You found all ${allArtworks.length} pieces. Incredible work!`);
   } else {
     mascotSay('Nice find! 🎉', `That's one more ${art.type} down.`);
   }
@@ -1130,7 +1130,7 @@ function showCheckinConfirm(art, { unverified } = {}) {
       <div class="quest-confirm-question">Does this match what you found?</div>
     </div>
     <button id="confirm-yes-btn" class="checkin-btn">✅ Yes, this is it!</button>
-    <button id="confirm-no-btn" class="confirm-no-btn">Not this one — keep looking</button>
+    <button id="confirm-no-btn" class="confirm-no-btn">Not this one, keep looking</button>
   `;
 
   document.getElementById('confirm-yes-btn').addEventListener('click', () => completeQuest(art, { unverified }));
@@ -1180,14 +1180,14 @@ function attemptCheckin() {
       } else {
         checkinFailCount++;
         btn.disabled = false;
-        btn.textContent = "📍 I'm here — Check In";
+        btn.textContent = "📍 Check In Here";
         if (status) status.textContent = `You're about ${Math.round(dist)}m away. Get closer!`;
         maybeShowExtraHint();
       }
     },
     () => {
       btn.disabled = false;
-      btn.textContent = "📍 I'm here — Check In";
+      btn.textContent = "📍 Check In Here";
       offerManualCheckin(status, 'Could not get your location.');
     },
     { enableHighAccuracy: true, timeout: 10000 }
@@ -1214,7 +1214,7 @@ function attemptCoordsCheckin() {
   const coords = parseCoords(input.value);
 
   if (!coords) {
-    status.textContent = "Couldn't read that — paste coordinates like 22.2866, 114.1503.";
+    status.textContent = "Couldn't read that. Paste coordinates like 22.2866, 114.1503.";
     return;
   }
 
@@ -1226,7 +1226,7 @@ function attemptCoordsCheckin() {
     showCheckinConfirm(activeQuest);
   } else {
     checkinFailCount++;
-    status.textContent = `That's about ${Math.round(dist)}m away — get closer, or check in without a location below.`;
+    status.textContent = `That's about ${Math.round(dist)}m away. Get closer, or check in without a location below.`;
     maybeShowExtraHint();
   }
 }
@@ -1275,7 +1275,7 @@ function mapSubmissionToArtwork(row) {
     photo: row.photo_url || '',
     commissioned: false,
     address: 'Community find, Sheung Wan',
-    hint: 'Spotted by a fellow hunter — exact clue coming soon. Look around the pinned location.',
+    hint: 'Spotted by a fellow hunter. Exact clue coming soon. Look around the pinned location.',
     radius: 40
   };
 }
@@ -1490,7 +1490,7 @@ function initQuestWelcome() {
 
   const found = getCompleted().length;
   document.getElementById('quest-welcome-text').textContent = found > 0
-    ? `You're mid-hunt — ${found} of ${allArtworks.length} found`
+    ? `You're mid-hunt: ${found} of ${allArtworks.length} found`
     : `Only one pin shows on the map at a time`;
   backdrop.classList.remove('hidden');
 }
@@ -1501,7 +1501,7 @@ function initQuestWelcome() {
 const HOWTO_TEXT = {
   quest: {
     label: 'Quest mode',
-    text: 'Only one pin shows on the map at a time. Walk to it and check in — it reveals what it is, then your next quest appears.'
+    text: 'Only one pin shows on the map at a time. Walk to it and check in. It reveals what it is, then your next quest appears.'
   },
   explore: {
     label: 'Explore mode',
@@ -1592,7 +1592,7 @@ const TOUR_KEY = 'saq_tour_seen';
 
 // Core loop first (map → locate → quest list), secondary tools last (filters, add art)
 const TOUR_STEPS = [
-  { selector: '#map', title: 'The map', text: 'That glowing dot is your current quest — tap it for a hint and to check in.' },
+  { selector: '#map', title: 'The map', text: 'That glowing dot is your current quest. Tap it for a hint and to check in.' },
   { selector: '#locate-btn', title: 'Find yourself', text: 'Tap to show your position and see live distance to your next quest.' },
   { selector: '.quest-mode-nav', title: 'Explore or Quest', text: 'Explore browses all 21 freely; Quest guides you one at a time. Tap either to see your list.' },
   { selector: '#filters', title: 'Filter by type', text: 'Show just the kinds of art you\'ve found so far, and narrow your quest list.' },
