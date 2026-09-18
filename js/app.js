@@ -1264,6 +1264,14 @@ function initFilters() {
 
 // ─── Community submissions ────────────────────────
 
+// per-piece hint overrides for community finds that have earned a real
+// clue, keyed by submissions.id — every other community piece still falls
+// back to the generic placeholder below
+const COMMUNITY_HINTS = {
+  9: 'A pink dolphin leaps across a rough concrete wall, a splash of candy color on a quiet stretch of Square Street.',
+  10: 'A little girl\'s face is painted in soft, delicate linework on a weathered wall, easy to walk past if you\'re not looking up.'
+};
+
 function mapSubmissionToArtwork(row) {
   return {
     id: `sub-${row.id}`,
@@ -1275,7 +1283,7 @@ function mapSubmissionToArtwork(row) {
     photo: row.photo_url || '',
     commissioned: false,
     address: 'Community find, Sheung Wan',
-    hint: 'Spotted by a fellow hunter. Exact clue coming soon. Look around the pinned location.',
+    hint: COMMUNITY_HINTS[row.id] || 'Spotted by a fellow hunter. Exact clue coming soon. Look around the pinned location.',
     radius: 40
   };
 }
@@ -1505,7 +1513,7 @@ const HOWTO_TEXT = {
   },
   explore: {
     label: 'Explore mode',
-    text: 'All 21 pins show on the map right away. Tap any one, in any order, and check in whenever you get there.'
+    text: 'All 23 pins show on the map right away. Tap any one, in any order, and check in whenever you get there.'
   }
 };
 let pendingHuntMode = null;
@@ -1594,7 +1602,7 @@ const TOUR_KEY = 'saq_tour_seen';
 const TOUR_STEPS = [
   { selector: '#map', title: 'The map', text: 'That glowing dot is your current quest. Tap it for a hint and to check in.' },
   { selector: '#locate-btn', title: 'Find yourself', text: 'Tap to show your position and see live distance to your next quest.' },
-  { selector: '.quest-mode-nav', title: 'Explore or Quest', text: 'Explore browses all 21 freely; Quest guides you one at a time. Tap either to see your list.' },
+  { selector: '.quest-mode-nav', title: 'Explore or Quest', text: 'Explore browses all 23 freely; Quest guides you one at a time. Tap either to see your list.' },
   { selector: '#filters', title: 'Filter by type', text: 'Show just the kinds of art you\'ve found so far, and narrow your quest list.' },
   { selector: '.add-btn', title: 'Add art', text: 'Spotted a piece that’s not on the map yet? Submit it here.' }
 ];
