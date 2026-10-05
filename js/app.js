@@ -1269,7 +1269,8 @@ function initFilters() {
 // back to the generic placeholder below
 const COMMUNITY_HINTS = {
   9: 'A pink dolphin leaps across a rough concrete wall, a splash of candy color on a quiet stretch of Square Street.',
-  10: 'A little girl\'s face is painted in soft, delicate linework on a weathered wall, easy to walk past if you\'re not looking up.'
+  10: 'A little girl\'s face is painted in soft, delicate linework on a weathered wall, easy to walk past if you\'re not looking up.',
+  11: 'Bruce Lee in his yellow jumpsuit throws a fingertip strike across a blazing orange sun, painted so sharply it looks photographed. Neon stripes cut over the wall beside the steps, and the artist tagged the top corner.'
 };
 
 function mapSubmissionToArtwork(row) {
