@@ -46,7 +46,7 @@ Users submit new finds through the **+ Add Art** form. Each submission is review
 
 Tap **+ Add Art** to open the four-step submission form. No account needed, just fill it in and submit.
 
-1. **Photo**: required, taken on the spot or picked from your gallery, then framed by dragging a 4:3 crop box over it and pulling its corners until the piece sits where you want it
+1. **Photo**: required, taken on the spot or picked from your gallery, then framed by dragging a crop box over it and pulling its corners or edges into any shape that suits the piece
 2. **Location**: guess it from GPS or drop a pin on the map yourself; can be skipped
 3. **Details**: art name, artist, type, and labels, all optional, with autocomplete suggestions
 4. **Review**: a summary of everything before you submit

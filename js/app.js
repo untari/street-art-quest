@@ -949,6 +949,7 @@ function openQuestCard(art) {
            <div class="quest-revealed-artist">by ${art.artist}</div>
          </div>
          <div class="quest-fun-fact"><strong>Fun fact</strong>${art.hint}</div>
+         ${art.photo ? '' : `<a class="add-photo-btn" href="submit.html?artwork=${encodeURIComponent(art.id)}">📷 Add your photo of this one</a>`}
          ${nextQuest
            ? `<button id="next-quest-btn" class="checkin-btn">→ Next: ${nextQuest.type} at ${nextQuest.address.split(',')[0]}</button>`
            : `<div class="quest-all-done">
@@ -1289,6 +1290,24 @@ function mapSubmissionToArtwork(row) {
   };
 }
 
+// Curated pieces ship with no photo of their own: hunters supply them. Each
+// approved photo row is stamped onto the piece it belongs to, so `art.photo`
+// lights up the quest card, the check-in screen and the gallery thumb exactly
+// as a community find's own photo already does. Rows arrive oldest-first, so
+// the newest approved photo of a piece is the one that sticks.
+function applyArtworkPhotos(rows) {
+  rows.forEach(row => {
+    if (!row.artwork_id || !row.photo_url) return;
+    const art = allArtworks.find(a => String(a.id) === String(row.artwork_id));
+    if (art) art.photo = row.photo_url;
+  });
+}
+
+// An approved row is one of two things: a brand new piece (its own pin), or a
+// photo someone shot of a piece we already list (artwork_id set). Both come
+// back in the one query and get split here — rows are read without filtering
+// on artwork_id so this still works on a database where that column has not
+// been added yet.
 async function loadApprovedSubmissions() {
   if (typeof db === 'undefined') return;
 
@@ -1300,11 +1319,17 @@ async function loadApprovedSubmissions() {
 
   if (error || !data || !data.length) return;
 
+  applyArtworkPhotos(data);
+
   const community = data
-    .filter(row => row.lat != null && row.lng != null)
+    .filter(row => !row.artwork_id && row.lat != null && row.lng != null)
     .map(mapSubmissionToArtwork);
 
-  if (!community.length) return;
+  if (!community.length) {
+    renderMarkers();
+    refreshQuestUI();
+    return;
+  }
 
   allArtworks = allArtworks.concat(community);
   initFilters();

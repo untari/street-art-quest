@@ -592,8 +592,19 @@ header {
   letter-spacing: 0.06em;
 }
 
-.quest-photo { width: 100%; aspect-ratio: 16/9; }
-.quest-photo img { width: 100%; height: 100%; object-fit: cover; }
+/* No fixed ratio here: submitters choose the shape of their crop, so the card
+   takes the shape of the photo rather than cutting it to 16/9 a second time.
+   The cap stops a very tall shot from pushing the rest of the card off screen,
+   and `contain` keeps it whole when the cap bites. */
+.quest-photo { width: 100%; background: var(--bg); }
+.quest-photo img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 46vh;
+  margin: 0 auto;
+  display: block;
+}
 
 .quest-mini-map {
   width: 100%;
@@ -837,6 +848,26 @@ header {
   color: var(--teal);
   margin-bottom: 4px;
 }
+
+.add-photo-btn {
+  display: block;
+  margin: 10px 20px 0;
+  padding: 12px;
+  background: none;
+  color: var(--teal);
+  border: 1.5px solid var(--teal);
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.add-photo-btn:hover { background: var(--teal); color: #fff; }
 
 .quest-all-done {
   margin: 18px 20px 0;
