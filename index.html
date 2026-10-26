@@ -7,7 +7,7 @@
   <meta name="description" content="Hunt down street art and murals hidden across Sheung Wan, Hong Kong." />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=50" />
+  <link rel="stylesheet" href="css/style.css?v=56" />
 </head>
 <body>
 
@@ -16,21 +16,44 @@
     <div class="filters" id="filters">
       <button class="filter-btn active" data-type="all">All</button>
     </div>
-    <div class="quest-mode-nav">
-      <button class="quest-nav-btn" id="nav-explore" data-mode-choice="explore">
-        <svg class="icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- The only control on this side: the chip reports the mode and opens a
+         picker to change it. Picking a mode also opens the quest list, since
+         this replaced the button that used to do that. The picker's buttons
+         carry .mode-option / data-mode-choice, the same hooks the play-mode
+         sheet uses, so applyHuntMode() keeps both in step. -->
+    <div class="quest-mode-nav" id="quest-mode-nav" data-mode="explore">
+      <div class="opt-option-wrap">
+        <button class="mode-status" id="mode-status" aria-haspopup="true" aria-expanded="false">
+          <svg class="icon-svg icon-explore" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/>
           <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
         </svg>
-        Explore
-      </button>
-      <button class="quest-nav-btn" id="nav-quest" data-mode-choice="quest">
-        <svg class="icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="icon-svg icon-quest" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
           <line x1="4" y1="22" x2="4" y2="15"/>
         </svg>
-        Quest
-      </button>
+          <span id="mode-status-label">Explore mode</span>
+          <span class="mode-status-caret" aria-hidden="true">⌄</span>
+        </button>
+        <div id="mode-picker" class="opt-picker mode-picker hidden">
+          <div class="mode-picker-list">
+            <button class="mode-option" data-mode-choice="explore">
+              <svg class="icon-svg icon-explore" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+        </svg>
+              Explore
+            </button>
+            <button class="mode-option" data-mode-choice="quest">
+              <svg class="icon-svg icon-quest" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+          <line x1="4" y1="22" x2="4" y2="15"/>
+        </svg>
+              Quest
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     <a href="submit.html" class="add-btn">+ Add Art</a>
   </header>
@@ -119,8 +142,7 @@
 
   <div id="howto-backdrop" class="welcome-backdrop hidden">
     <div class="welcome-card">
-      <div class="welcome-logo">HOW TO <span>PLAY</span></div>
-      <p class="welcome-city" id="howto-mode-label">Quest mode</p>
+      <div class="welcome-logo"><span class="logo-word" id="howto-mode-word">QUEST</span> <span>MODE</span></div>
       <p class="howto-hint" id="howto-mode-text"></p>
       <button id="howto-continue" class="play-mode-done">Got it</button>
     </div>
@@ -142,6 +164,24 @@
       <button id="play-mode-back" class="play-mode-back-btn">← How to play</button>
       <div class="welcome-logo">HOW DO YOU <span>WANT TO PLAY?</span></div>
       <p class="welcome-city">Tune your hunt</p>
+
+      <div class="play-settings-heading">Mode</div>
+      <div class="mode-toggle-row">
+        <button class="mode-option" data-mode-choice="explore">
+          <svg class="icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+          </svg>
+          Explore
+        </button>
+        <button class="mode-option" data-mode-choice="quest">
+          <svg class="icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+            <line x1="4" y1="22" x2="4" y2="15"/>
+          </svg>
+          Quest
+        </button>
+      </div>
 
       <p class="settings-note">Only want to see certain art? Filter by artist, type, or both.</p>
       <div class="narrow-filter-list">
@@ -248,6 +288,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/data.js"></script>
-  <script src="js/app.js?v=50"></script>
+  <script src="js/app.js?v=56"></script>
 </body>
 </html>

@@ -49,6 +49,9 @@ const HUNT_MODE_KEY = 'saq_hunt_mode';
 // 'quest'   = one quest unlocked at a time; the rest stay locked until you check in
 let huntMode = localStorage.getItem(HUNT_MODE_KEY) || 'explore';
 
+// Explore is where everyone starts; quest mode is opt-in from the navbar.
+const MODE_LABEL = { explore: 'Explore mode', quest: 'Quest mode' };
+
 const ARTIST_KEY = 'saq_artist';
 // multi-select: [] = every artist, otherwise an OR match against this list
 let activeArtists = (() => {
@@ -778,6 +781,20 @@ function selectAllArtists() {
   refreshQuestUI();
 }
 
+function toggleModePicker() {
+  const picker = document.getElementById('mode-picker');
+  const willShow = picker.classList.contains('hidden');
+  picker.classList.toggle('hidden', !willShow);
+  document.getElementById('mode-status').setAttribute('aria-expanded', String(willShow));
+}
+
+function closeModePicker() {
+  const picker = document.getElementById('mode-picker');
+  if (!picker) return;
+  picker.classList.add('hidden');
+  document.getElementById('mode-status').setAttribute('aria-expanded', 'false');
+}
+
 function closeArtistPicker() {
   const picker = document.getElementById('artist-picker');
   if (picker) picker.classList.add('hidden');
@@ -856,7 +873,11 @@ function applyHuntMode() {
     syncNarrowControls();
   }
 
-  document.querySelectorAll('.mode-option, .quest-nav-btn[data-mode-choice]').forEach(b => {
+  // the chip just reports; aria-live on it announces the change on its own
+  document.getElementById('quest-mode-nav').dataset.mode = huntMode;
+  document.getElementById('mode-status-label').textContent = MODE_LABEL[huntMode];
+
+  document.querySelectorAll('.mode-option').forEach(b => {
     b.classList.toggle('active', b.dataset.modeChoice === huntMode);
   });
 }
@@ -866,6 +887,7 @@ function setHuntMode(mode) {
   localStorage.setItem(HUNT_MODE_KEY, mode);
   closeArtistPicker();
   closeTypePicker();
+  closeModePicker();
   applyHuntMode();
   syncNarrowControls();
   refreshQuestUI();
@@ -1487,16 +1509,14 @@ const WELCOME_KEY = 'saq_welcomed';
 
 function initWelcome() {
   if (!localStorage.getItem(WELCOME_KEY)) {
-    document.getElementById('nav-explore').classList.add('pulsing');
-    document.getElementById('nav-quest').classList.add('pulsing');
+    document.getElementById('mode-status').classList.add('pulsing');
   }
 }
 
 // stops the pulse the moment the user is pointed elsewhere (tour start/skip)
 // or opens the list directly — never leave two contradictory CTAs on screen
 function clearWelcomePulse() {
-  document.getElementById('nav-explore').classList.remove('pulsing');
-  document.getElementById('nav-quest').classList.remove('pulsing');
+  document.getElementById('mode-status').classList.remove('pulsing');
   localStorage.setItem(WELCOME_KEY, '1');
 }
 
@@ -1534,11 +1554,11 @@ function initQuestWelcome() {
 // settings sheet before the list opens.
 const HOWTO_TEXT = {
   quest: {
-    label: 'Quest mode',
+    label: 'Quest',
     text: 'Only one pin shows on the map at a time. Walk to it and check in. It reveals what it is, then your next quest appears.'
   },
   explore: {
-    label: 'Explore mode',
+    label: 'Explore',
     text: 'All 23 pins show on the map right away. Tap any one, in any order, and check in whenever you get there.'
   }
 };
@@ -1556,8 +1576,26 @@ function handleQuestNavClick(mode) {
 }
 
 function initQuestNav() {
-  document.getElementById('nav-explore').addEventListener('click', () => handleQuestNavClick('explore'));
-  document.getElementById('nav-quest').addEventListener('click', () => handleQuestNavClick('quest'));
+  document.getElementById('mode-status').addEventListener('click', e => {
+    e.stopPropagation();
+    clearWelcomePulse();
+    toggleModePicker();
+  });
+
+  // initHuntMode() already binds these to setHuntMode; picking one also opens
+  // the list, because the picker took the place of the button that used to.
+  document.querySelectorAll('#mode-picker .mode-option').forEach(btn => {
+    btn.addEventListener('click', openQuestPanel);
+  });
+
+  // this one hangs in the navbar over the map, so unlike the sheet's pickers it
+  // needs the usual ways out: a click anywhere else, or Escape
+  document.addEventListener('click', e => {
+    if (!document.getElementById('mode-picker').contains(e.target)) closeModePicker();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModePicker();
+  });
 }
 
 function showResumeChoice(mode) {
@@ -1600,7 +1638,7 @@ function initResumeChoice() {
 
 function showHowToPlay(mode) {
   pendingHuntMode = mode;
-  document.getElementById('howto-mode-label').textContent = HOWTO_TEXT[mode].label;
+  document.getElementById('howto-mode-word').textContent = HOWTO_TEXT[mode].label;
   document.getElementById('howto-mode-text').textContent = HOWTO_TEXT[mode].text;
   document.getElementById('howto-backdrop').classList.remove('hidden');
 }
@@ -1628,7 +1666,7 @@ const TOUR_KEY = 'saq_tour_seen';
 const TOUR_STEPS = [
   { selector: '#map', title: 'The map', text: 'That glowing dot is your current quest. Tap it for a hint and to check in.' },
   { selector: '#locate-btn', title: 'Find yourself', text: 'Tap to show your position and see live distance to your next quest.' },
-  { selector: '.quest-mode-nav', title: 'Explore or Quest', text: 'Explore browses all 23 freely; Quest guides you one at a time. Tap either to see your list.' },
+  { selector: '.quest-mode-nav', title: 'Explore or Quest', text: 'This says which mode you\'re in. Tap it to switch and to open your list. Explore shows every pin at once; Quest guides you to one at a time.' },
   { selector: '#filters', title: 'Filter by type', text: 'Show just the kinds of art you\'ve found so far, and narrow your quest list.' },
   { selector: '.add-btn', title: 'Add art', text: 'Spotted a piece that’s not on the map yet? Submit it here.' }
 ];

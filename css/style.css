@@ -98,34 +98,70 @@ header {
 .filter-btn[data-type="Sticker"]      { background: var(--green); }
 .filter-btn[data-type="Installation"] { background: var(--blue); }
 
-/* ─── QUEST NAV BUTTONS ─────────────────────────── */
+/* ─── MODE STATUS CHIP ──────────────────────────── */
 /* margin-left:auto (not .filters' flex:1) is what pins this to the right —
    .filters gets display:none in quest mode, so it can't be relied on as the spacer */
 .quest-mode-nav { display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }
 
-.quest-nav-btn {
-  background: var(--dark);
-  color: #fff;
-  border: none;
+/* A soft-tinted pill in the same language as .mode-option and .precision-option
+   rather than another solid button: it reads as the current state first and a
+   control second. Opening it fills teal, so the navbar shows the picker is up. */
+.mode-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
   padding: 7px 14px;
   border-radius: 20px;
+  background: rgba(46,196,182,0.12);
+  border: 1.5px solid rgba(46,196,182,0.4);
   font-family: 'Nunito', sans-serif;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: transform 0.15s, opacity 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-shrink: 0;
+  color: var(--dark);
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 
-.quest-nav-btn:hover { opacity: 0.8; transform: scale(1.05); }
+.mode-status:hover {
+  background: rgba(46,196,182,0.22);
+  border-color: var(--teal);
+  transform: scale(1.03);
+}
 
-.quest-nav-btn.active { background: var(--teal); }
+.mode-status[aria-expanded="true"] {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(46,196,182,0.4);
+}
+
+.mode-status .icon-svg { color: var(--teal); }
+.mode-status[aria-expanded="true"] .icon-svg { color: #fff; }
+
+.mode-status-caret {
+  font-size: 13px;
+  line-height: 1;
+  margin-left: -2px;
+  transition: transform 0.18s;
+}
+
+.mode-status[aria-expanded="true"] .mode-status-caret { transform: rotate(180deg); }
+
+/* hangs off the chip's left edge so it can't run past the right of a phone */
+.mode-picker { left: 0; right: auto; min-width: 186px; }
+
+.mode-picker-list { display: flex; flex-direction: column; gap: 8px; }
+
+/* Only the chip swaps icons — the Quest button always wears the flag. */
+.quest-mode-nav[data-mode="explore"] #mode-status .icon-quest,
+.quest-mode-nav[data-mode="quest"]   #mode-status .icon-explore { display: none; }
+
+.mode-toggle-row { display: flex; gap: 10px; width: 100%; margin-bottom: 18px; }
 
 .add-btn {
   background: var(--teal);
@@ -1311,6 +1347,9 @@ header {
 
 .welcome-logo {
   font-family: 'Bebas Neue', sans-serif;
+  /* Bebas is caps-only, but the mode name is written in here from JS — this
+     keeps it looking right if the webfont fails and the fallback kicks in */
+  text-transform: uppercase;
   font-size: 30px;
   letter-spacing: 0.08em;
   color: var(--dark);
@@ -1318,6 +1357,10 @@ header {
 }
 
 .welcome-logo span { color: var(--teal); }
+
+/* the mode name is the card's title now, so the name itself stays dark and only
+   the trailing "MODE" takes the accent, matching the other welcome cards */
+.welcome-logo .logo-word { color: var(--dark); }
 
 .welcome-city {
   font-size: 11px;
@@ -1334,6 +1377,8 @@ header {
   font-weight: 600;
   line-height: 1.5;
   text-align: left;
+  /* stands in for the subtitle that used to carry this gap */
+  margin: 16px 0 24px;
 }
 
 .welcome-skip {
@@ -1685,7 +1730,7 @@ header {
   100% { box-shadow: 0 0 0 0 rgba(46,196,182,0); }
 }
 
-.quest-nav-btn.pulsing {
+.mode-status.pulsing {
   animation: quest-pulse 1.8s ease-out infinite;
 }
 
@@ -1703,8 +1748,8 @@ header {
     align-items: center;
   }
 
-  /* Row 1: logo alone — Explore/Quest + Add Art no longer fit beside it now
-     that there are two nav buttons instead of one */
+  /* Row 1: logo alone — the mode chip, its switch button and Add Art don't fit
+     beside it */
   .logo {
     font-size: 16px;
     order: 1;
@@ -1722,6 +1767,17 @@ header {
   .add-btn {
     order: 2;
     flex-shrink: 0;
+    padding: 8px 12px;
+  }
+
+  /* The mode chip is wider than the Explore button it replaced, so the pills
+     tighten on phones to keep chip + switch + Add Art on one row. A fourth row
+     would push the filter bar past the fixed --header-height and clip it. */
+  .quest-mode-nav { gap: 6px; }
+
+  .mode-status {
+    padding: 7px 11px;
+    gap: 6px;
   }
 
   /* Row 3: filters full-width */
