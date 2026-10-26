@@ -511,7 +511,7 @@ function updatePlayModePill() {
     <circle cx="12" cy="12" r="3.2"/>
     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
   </svg>
-  Change play mode ⌄`;
+  Tune your hunt ⌄`;
 }
 
 function refreshQuestUI() {
@@ -520,6 +520,7 @@ function refreshQuestUI() {
 }
 
 function openPlayModeBackdrop() {
+  closeModePicker();
   document.getElementById('restart-hunt-row').classList.toggle('hidden', getCompleted().length === 0);
   document.getElementById('restart-hunt-btn').classList.remove('hidden');
   document.getElementById('restart-confirm').classList.add('hidden');
@@ -691,6 +692,17 @@ function clearActiveType() {
 function syncFilterChip() {
   const chip = document.getElementById('filter-status');
   if (!chip) return;
+
+  // nothing to filter in quest mode, so the chip drops the filter state
+  // entirely rather than showing a count that can only ever be zero
+  if (huntMode === 'quest') {
+    chip.removeAttribute('data-on');
+    document.getElementById('filter-status-label').textContent = 'Settings';
+    document.getElementById('filter-status-count').textContent = '';
+    chip.setAttribute('aria-label', 'Hunt settings');
+    return;
+  }
+
   const label = typeFilterLabel();
   chip.toggleAttribute('data-on', Boolean(label));
   document.getElementById('filter-status-label').textContent = label || 'Filter';
@@ -819,7 +831,6 @@ function selectAllArtists() {
 function toggleModePicker() {
   const picker = document.getElementById('mode-picker');
   const willShow = picker.classList.contains('hidden');
-  closeNavTypePicker();
   picker.classList.toggle('hidden', !willShow);
   document.getElementById('mode-status').setAttribute('aria-expanded', String(willShow));
 }
@@ -829,25 +840,6 @@ function closeModePicker() {
   if (!picker) return;
   picker.classList.add('hidden');
   document.getElementById('mode-status').setAttribute('aria-expanded', 'false');
-}
-
-// The navbar's own type picker. Separate from the sheet's toggleTypePicker:
-// this one lives over the map, so it closes on an outside click or Escape,
-// and only one navbar popup may be open at a time.
-function toggleNavTypePicker() {
-  const picker = document.getElementById('nav-type-picker');
-  const willShow = picker.classList.contains('hidden');
-  closeModePicker();
-  picker.classList.toggle('hidden', !willShow);
-  document.getElementById('filter-status').setAttribute('aria-expanded', String(willShow));
-  if (willShow) buildTypePicker();
-}
-
-function closeNavTypePicker() {
-  const picker = document.getElementById('nav-type-picker');
-  if (!picker) return;
-  picker.classList.add('hidden');
-  document.getElementById('filter-status').setAttribute('aria-expanded', 'false');
 }
 
 function closeArtistPicker() {
@@ -923,12 +915,17 @@ function initPickerOutsideClose(pickerId, wrapSel, close) {
 }
 
 function applyHuntMode() {
-  // quest mode shows one pin at a time, so there is nothing to filter
-  const filterNav = document.getElementById('filter-nav-wrap');
-  if (filterNav) filterNav.classList.toggle('hidden', huntMode === 'quest');
+  // Quest mode shows one pin at a time, so artist and type have nothing to
+  // narrow — the sheet drops them and keeps the difficulty dial, which is the
+  // part that matters most when you're being walked to a single piece.
+  const questing = huntMode === 'quest';
+  document.querySelectorAll('.explore-only').forEach(el => el.classList.toggle('hidden', questing));
+  // not 'how precise your location is' — that just reads back the heading
+  // underneath it when precision is the only section left
+  document.getElementById('play-mode-sub').textContent =
+    questing ? 'How much help do you want?' : 'Filters and location precision';
 
-  if (huntMode === 'quest') {
-    closeNavTypePicker();
+  if (questing) {
     clearActiveType();
     clearActiveArtist();
     syncNarrowControls();
@@ -941,6 +938,9 @@ function applyHuntMode() {
   document.querySelectorAll('.mode-option').forEach(b => {
     b.classList.toggle('active', b.dataset.modeChoice === huntMode);
   });
+
+  // quest→explore clears no filter, so nothing else would re-word the chip
+  syncFilterChip();
 }
 
 function setHuntMode(mode) {
@@ -949,7 +949,6 @@ function setHuntMode(mode) {
   closeArtistPicker();
   closeTypePicker();
   closeModePicker();
-  closeNavTypePicker();
   applyHuntMode();
   syncNarrowControls();
   refreshQuestUI();
@@ -1631,21 +1630,17 @@ function initQuestNav() {
     btn.addEventListener('click', openQuestPanel);
   });
 
-  document.getElementById('filter-status').addEventListener('click', e => {
-    e.stopPropagation();
-    toggleNavTypePicker();
-  });
+  // artist, type and location precision all live in the settings sheet, so
+  // the chip opens that rather than a filter dropdown of its own
+  document.getElementById('filter-status').addEventListener('click', openPlayModeBackdrop);
 
-  // these hang in the navbar over the map, so unlike the sheet's pickers they
-  // need the usual ways out: a click anywhere else, or Escape
+  // the mode picker hangs in the navbar over the map, so unlike the sheet's
+  // pickers it needs the usual ways out: a click anywhere else, or Escape
   document.addEventListener('click', e => {
     if (!document.getElementById('mode-picker').contains(e.target)) closeModePicker();
-    if (!document.getElementById('nav-type-picker').contains(e.target)) closeNavTypePicker();
   });
   document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape') return;
-    closeModePicker();
-    closeNavTypePicker();
+    if (e.key === 'Escape') closeModePicker();
   });
 }
 
@@ -1718,7 +1713,7 @@ const TOUR_STEPS = [
   { selector: '#map', title: 'The map', text: 'That glowing dot is your current quest. Tap it for a hint and to check in.' },
   { selector: '#locate-btn', title: 'Find yourself', text: 'Tap to show your position and see live distance to your next quest.' },
   { selector: '.quest-mode-nav', title: 'Explore or Quest', text: 'This says which mode you\'re in. Tap it to switch and to open your list. Explore shows every pin at once; Quest guides you to one at a time.' },
-  { selector: '#filter-nav-wrap', title: 'Filter by type', text: 'Tap to show only certain kinds of art. Each type has a colour, and the pins on the map match it.' },
+  { selector: '#filter-nav-wrap', title: 'Tune your hunt', text: 'Narrow the map by artist or type, and set how precise your location is. Each type has a colour, and the pins match it.' },
   { selector: '.add-btn', title: 'Add art', text: 'Spotted a piece that’s not on the map yet? Submit it here.' }
 ];
 

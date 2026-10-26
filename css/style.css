@@ -132,13 +132,14 @@ header {
 
 .filter-status[data-on] .icon-svg { color: #fff; }
 
-.filter-nav-wrap.hidden { display: none; }
+.explore-only.hidden { display: none; }
+
+/* one chip, two faces — same swap the mode chip uses for compass and flag */
+.quest-mode-nav[data-mode="explore"] #filter-status .icon-settings,
+.quest-mode-nav[data-mode="quest"]   #filter-status .icon-filter { display: none; }
 
 .mode-picker { left: 0; right: auto; min-width: 186px; }
 
-/* anchored to its right edge — this chip sits mid-row, so left:0 would run it
-   off the side of a phone */
-.nav-type-picker { left: auto; right: 0; min-width: 210px; }
 
 .mode-picker-list { display: flex; flex-direction: column; gap: 8px; }
 
@@ -146,7 +147,6 @@ header {
 .quest-mode-nav[data-mode="explore"] #mode-status .icon-quest,
 .quest-mode-nav[data-mode="quest"]   #mode-status .icon-explore { display: none; }
 
-.mode-toggle-row { display: flex; gap: 10px; width: 100%; margin-bottom: 18px; }
 
 .add-btn {
   background: var(--teal);

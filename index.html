@@ -7,7 +7,7 @@
   <meta name="description" content="Hunt down street art and murals hidden across Sheung Wan, Hong Kong." />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=59" />
+  <link rel="stylesheet" href="css/style.css?v=63" />
 </head>
 <body>
 
@@ -52,24 +52,24 @@
         </div>
       </div>
 
-      <!-- Replaces the header's type-filter chip bar. One tap still opens the
-           type list, but it's a popup now, so the header loses a whole row.
-           The list carries a colour dot per type, which is the only legend
-           left for the pin colours the bar used to spell out. It shares
-           .type-picker-list (and so buildTypePicker) with the play-mode
-           sheet's picker, so both show the same state. -->
-      <div class="opt-option-wrap filter-nav-wrap" id="filter-nav-wrap">
-        <button class="mode-status filter-status" id="filter-status" aria-haspopup="true" aria-expanded="false" aria-label="Filter by type">
-          <svg class="icon-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Replaces the header's type-filter chip bar and doubles as the way
+           into the settings sheet. It has two faces: a funnel in explore,
+           where artist and type apply, and a gear in quest, where they don't
+           and only the difficulty dial is left. Same [data-mode] swap the
+           mode chip uses for its compass and flag. -->
+      <div class="filter-nav-wrap" id="filter-nav-wrap">
+        <button class="mode-status filter-status" id="filter-status" aria-haspopup="dialog" aria-label="Filter and settings">
+          <svg class="icon-svg icon-filter" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <svg class="icon-svg icon-settings" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3.2"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
           <span id="filter-status-label">Filter</span>
           <span class="filter-status-count" id="filter-status-count" aria-hidden="true"></span>
           <span class="mode-status-caret" aria-hidden="true">⌄</span>
         </button>
-        <div id="nav-type-picker" class="opt-picker nav-type-picker hidden">
-          <div id="nav-type-picker-list" class="opt-picker-list type-picker-list"></div>
-        </div>
       </div>
     </div>
     <a href="submit.html" class="add-btn">+ Add Art</a>
@@ -108,7 +108,7 @@
         <circle cx="12" cy="12" r="3.2"/>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
-      Change play mode ⌄
+      Tune your hunt ⌄
     </button>
     <div id="quest-list-summary" class="filter-summary hidden"></div>
     <div id="quest-list" class="quest-list"></div>
@@ -179,29 +179,11 @@
   <div id="play-mode-backdrop" class="welcome-backdrop hidden">
     <div class="welcome-card">
       <button id="play-mode-back" class="play-mode-back-btn">← How to play</button>
-      <div class="welcome-logo">HOW DO YOU <span>WANT TO PLAY?</span></div>
-      <p class="welcome-city">Tune your hunt</p>
+      <div class="welcome-logo">TUNE YOUR <span>HUNT</span></div>
+      <p class="welcome-city" id="play-mode-sub">Filters and location precision</p>
 
-      <div class="play-settings-heading">Mode</div>
-      <div class="mode-toggle-row">
-        <button class="mode-option" data-mode-choice="explore">
-          <svg class="icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
-          </svg>
-          Explore
-        </button>
-        <button class="mode-option" data-mode-choice="quest">
-          <svg class="icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-            <line x1="4" y1="22" x2="4" y2="15"/>
-          </svg>
-          Quest
-        </button>
-      </div>
-
-      <p class="settings-note">Only want to see certain art? Filter by artist, type, or both.</p>
-      <div class="narrow-filter-list">
+      <p class="settings-note explore-only">Only want to see certain art? Filter by artist, type, or both.</p>
+      <div class="narrow-filter-list explore-only">
         <div class="artist-option-wrap opt-option-wrap">
           <button id="artist-filter-btn" class="narrow-filter-btn">
             <span class="narrow-filter-icon">
@@ -305,6 +287,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/data.js"></script>
-  <script src="js/app.js?v=59"></script>
+  <script src="js/app.js?v=63"></script>
 </body>
 </html>
