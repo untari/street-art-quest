@@ -438,8 +438,6 @@ function updateQuestScore() {
 }
 
 function renderQuestPanelBody() {
-  document.getElementById('play-mode-pill').classList.toggle('hidden', questPanelTab === 'gallery');
-
   if (questPanelTab === 'gallery') {
     renderGallery();
   } else {
@@ -498,22 +496,6 @@ function resolveNearestOrigin(callback) {
   );
 }
 
-// sort is automatic now, so the pill's only job is the artist/type filter —
-// same combined label as the quest list's own header (groupLabelFor)
-// static label — it used to show the active filter, but that's confusing
-// when it silently changes text/icon depending on what you picked. The
-// quest list's own header already shows the active filter (with a ✕ to
-// clear it), so the pill's only job is "tap here to change settings."
-function updatePlayModePill() {
-  const pill = document.getElementById('play-mode-pill');
-  if (!pill) return;
-  pill.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="3.2"/>
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-  </svg>
-  Tune your hunt ⌄`;
-}
-
 function refreshQuestUI() {
   renderQuestPanelBody();
   renderMarkers();
@@ -550,8 +532,21 @@ function syncNarrowControls() {
     document.getElementById('type-filter-value').textContent = typeFilterLabel() || 'All types';
     typeBtn.classList.toggle('active', activeTypes.length > 0);
   }
+  const clearBtn = document.getElementById('clear-filters-btn');
+  if (clearBtn) clearBtn.classList.toggle('hidden', !activeArtists.length && !activeTypes.length);
   updateFilterSummary();
-  updatePlayModePill();
+}
+
+// drops artist and type together, then puts every control that reads them
+// back in step — the same set the summary's ✕ in the quest list resets
+function clearAllFilters() {
+  clearActiveArtist();
+  clearActiveType();
+  buildArtistPicker();
+  buildTypePicker();
+  syncFilterChip();
+  syncNarrowControls();
+  refreshQuestUI();
 }
 
 // one-line recap of the combined filter state — "Showing Mural · by Xeva —
@@ -590,13 +585,7 @@ function renderFilterSummary(container, { withClear = false, funMode = false } =
     clearBtn.title = 'Clear filters';
     clearBtn.setAttribute('aria-label', 'Clear filters');
     clearBtn.textContent = '✕';
-    clearBtn.addEventListener('click', () => {
-      clearActiveArtist();
-      clearActiveType();
-      syncFilterChip();
-      syncNarrowControls();
-      refreshQuestUI();
-    });
+    clearBtn.addEventListener('click', clearAllFilters);
     container.appendChild(clearBtn);
   }
 
@@ -654,12 +643,11 @@ function resetProgress() {
 function initPlayMode() {
   document.getElementById('artist-filter-btn').addEventListener('click', toggleArtistPicker);
   document.getElementById('type-filter-btn').addEventListener('click', toggleTypePicker);
+  document.getElementById('clear-filters-btn').addEventListener('click', clearAllFilters);
   // also opens the list — a no-op if it's already open (e.g. tweaking settings mid-hunt)
-  document.getElementById('play-mode-done').addEventListener('click', () => {
-    closePlayModeBackdrop();
-    openQuestPanel();
-  });
-  document.getElementById('play-mode-pill').addEventListener('click', openPlayModeBackdrop);
+  // just closes — the list stays open behind it if that's where you came
+  // from, and you land back on the map if you opened this from the navbar
+  document.getElementById('play-mode-done').addEventListener('click', closePlayModeBackdrop);
   // re-explain the current mode, then land back on this same sheet
   document.getElementById('play-mode-back').addEventListener('click', () => {
     closePlayModeBackdrop();
@@ -671,7 +659,6 @@ function initPlayMode() {
   });
   initArtistPicker();
   initTypePicker();
-  updatePlayModePill();
 }
 
 // ─── Filter pickers (artist / type) ───────────────
@@ -805,6 +792,9 @@ function addPickerItem(listEl, label, count, isActive, onClick, color) {
     b.appendChild(nameEl);
   }
   b.appendChild(countEl);
+  // a zero row is worth showing — "this artist has no installations" is the
+  // useful half of the answer — but tapping it could only empty the map
+  if (count === 0 && !isActive) b.disabled = true;
   b.addEventListener('click', onClick);
   listEl.appendChild(b);
 }
@@ -817,6 +807,7 @@ function toggleArtist(name) {
   if (i === -1) activeArtists.push(name); else activeArtists.splice(i, 1);
   localStorage.setItem(ARTIST_KEY, JSON.stringify(activeArtists));
   buildArtistPicker();
+  buildTypePicker(); // the type counts are scoped to this artist now
   syncNarrowControls();
   refreshQuestUI();
 }
@@ -824,6 +815,7 @@ function toggleArtist(name) {
 function selectAllArtists() {
   clearActiveArtist();
   buildArtistPicker();
+  buildTypePicker(); // type counts go back to spanning everyone
   syncNarrowControls();
   refreshQuestUI();
 }
@@ -863,19 +855,37 @@ function toggleTypePicker() {
   if (willShow) buildTypePicker();
 }
 
+// Type counts follow the artist filter, so picking an artist re-tallies the
+// list to what they actually painted. Every known type still gets a row, even
+// at zero: "Alex Senna, Mural 4, Installation 0" says more about them than a
+// list with the empty types quietly dropped.
 function buildTypePicker() {
-  const counts = tallyBy('type');
-  const types = Object.keys(counts).sort();
+  const pool = activeArtists.length
+    ? allArtworks.filter(a => activeArtists.includes(a.artist))
+    : allArtworks;
 
-  // both the navbar chip's picker and the play-mode sheet's carry
-  // .type-picker-list, so one build keeps them identical
+  const counts = {};
+  pool.forEach(a => { if (a.type) counts[a.type] = (counts[a.type] || 0) + 1; });
+  const types = Object.keys(tallyBy('type')).sort(); // every type, not just the pool's
+
   document.querySelectorAll('.type-picker-list').forEach(listEl => {
     listEl.innerHTML = '';
-    addPickerItem(listEl, 'All types', allArtworks.length, activeTypes.length === 0,
+    addPickerItem(listEl, 'All types', pool.length, activeTypes.length === 0,
       () => selectType('all'), 'var(--dark)');
-    types.forEach(t => addPickerItem(listEl, t, counts[t], activeTypes.includes(t),
+    types.forEach(t => addPickerItem(listEl, t, counts[t] || 0, activeTypes.includes(t),
       () => selectType(t), typeColor(t)));
   });
+
+  renderTypePickerTotal(pool);
+}
+
+// Sits under the list rather than in it, so it stays put while the types
+// scroll. Just what the counts above add up to — the artist's name is already
+// on the row that opened this, and repeating it made the line too long to read.
+function renderTypePickerTotal(pool) {
+  const el = document.getElementById('type-picker-total');
+  if (!el) return;
+  el.textContent = `${pool.length} piece${pool.length === 1 ? '' : 's'}`;
 }
 
 // multi-select, same as artist: 'all' clears the selection, anything else
