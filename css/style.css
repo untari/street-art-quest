@@ -1502,17 +1502,8 @@ header {
 
 .filter-summary-clear:hover { color: var(--dark); }
 
-/* same summary, dropped into the quest list under the pill instead of the sheet */
+/* same summary, dropped into the quest list instead of the sheet */
 #quest-list-summary { margin: 0 20px 14px; }
-
-.summary-name-chip { display: inline-flex; align-items: center; }
-
-.summary-count-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 16px; height: 16px; margin-left: 4px; padding: 0 4px;
-  border-radius: 999px; background: var(--teal); color: #fff;
-  font-size: 10px; font-weight: 800; line-height: 1;
-}
 
 .opt-option-wrap { position: relative; }
 

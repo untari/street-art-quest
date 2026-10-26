@@ -322,7 +322,7 @@ function renderQuestList() {
     .filter(passesExploreFilters);
 
   const groupLabel = groupLabelFor();
-  renderFilterSummary(document.getElementById('quest-list-summary'), { withClear: true, funMode: true });
+  renderFilterSummary(document.getElementById('quest-list-summary'), { withClear: true });
 
   if (visible.length === 0) {
     const empty = document.createElement('div');
@@ -552,32 +552,25 @@ function clearAllFilters() {
 // one-line recap of the combined filter state — "Showing Mural · by Xeva —
 // 2 pieces" — hidden entirely when nothing's picked. Built with textContent,
 // not innerHTML, so an "&" in a name can't be misread as an HTML entity.
-// shared by the settings sheet and the quest list — same "Artist: X (n),
-// Y (n)" / "Type: A (n)" recap, optionally with a one-tap clear-all button
-// (the quest list has one so you don't have to reopen the sheet just to
-// reset; the sheet doesn't need one since "All artists"/"All types" already
-// does that from inside each picker)
-function renderFilterSummary(container, { withClear = false, funMode = false } = {}) {
+// One line: how many pieces the filters leave. It used to spell out
+// "Artist: Xeva (2), WEST one & Megic (1)" over two lines, but the Artist
+// and Type rows just above already name what's picked, and the per-name
+// counts added up to nothing you could point at. The number that matters
+// is how much of the map is left.
+function renderFilterSummary(container, { withClear = false } = {}) {
   if (!container) return;
-  // in fun mode (the quest list) the header chip bar already shows the active
-  // type, so repeating it here would be redundant — only artists get a line
-  const hasContent = activeArtists.length > 0 || (!funMode && activeTypes.length > 0);
-  if (!hasContent) {
+  if (!activeArtists.length && !activeTypes.length) {
     container.classList.add('hidden');
-    container.innerHTML = '';
+    container.textContent = '';
     return;
   }
 
   container.innerHTML = '';
-  const lines = document.createElement('div');
-  lines.className = 'filter-summary-lines';
-  if (funMode) {
-    if (activeArtists.length) lines.appendChild(summaryLineFun('🔍 Tracking', activeArtists, tallyArtistsInContext(activeArtists)));
-  } else {
-    if (activeArtists.length) lines.appendChild(summaryLine('Artist', activeArtists, tallyArtistsInContext(activeArtists)));
-    if (activeTypes.length) lines.appendChild(summaryLine('Type', activeTypes, tallyTypesInContext(activeTypes)));
-  }
-  container.appendChild(lines);
+  const line = document.createElement('span');
+  line.className = 'filter-summary-lines';
+  const shown = allArtworks.filter(passesExploreFilters).length;
+  line.textContent = `Showing ${shown} of ${allArtworks.length} pieces`;
+  container.appendChild(line);
 
   if (withClear) {
     const clearBtn = document.createElement('button');
@@ -594,41 +587,6 @@ function renderFilterSummary(container, { withClear = false, funMode = false } =
 
 function updateFilterSummary() {
   renderFilterSummary(document.getElementById('filter-summary'));
-}
-
-// one line of the filter summary: "Artist: Xeva (2), Alex Croft (1)" — each
-// selected name with its own piece count, built with textContent/createTextNode
-// (not innerHTML) so a name with "&" can't be misread as an HTML entity
-function summaryLine(label, names, counts) {
-  const line = document.createElement('div');
-  line.appendChild(document.createTextNode(`${label}: `));
-  names.forEach((name, i) => {
-    if (i > 0) line.appendChild(document.createTextNode(', '));
-    line.appendChild(document.createTextNode(`${name} `));
-    const strong = document.createElement('strong');
-    strong.textContent = `(${counts[name] || 0})`;
-    line.appendChild(strong);
-  });
-  return line;
-}
-
-// quest-list variant of summaryLine: each name gets a trailing count badge
-// (pill) instead of "(n)" text, for a punchier, less form-like look
-function summaryLineFun(label, names, counts) {
-  const line = document.createElement('div');
-  line.appendChild(document.createTextNode(`${label}: `));
-  names.forEach((name, i) => {
-    if (i > 0) line.appendChild(document.createTextNode(', '));
-    const chip = document.createElement('span');
-    chip.className = 'summary-name-chip';
-    chip.appendChild(document.createTextNode(name));
-    const badge = document.createElement('span');
-    badge.className = 'summary-count-badge';
-    badge.textContent = counts[name] || 0;
-    chip.appendChild(badge);
-    line.appendChild(chip);
-  });
-  return line;
 }
 
 function resetProgress() {
@@ -723,26 +681,6 @@ function tallyBy(field) {
 // selected in the other category — e.g. picking Xeva + Mural should say how
 // many of Xeva's pieces are murals (possibly 0), not her total piece count,
 // so the summary tells you how much there is left to actually go find
-function tallyArtistsInContext(names) {
-  const counts = {};
-  names.forEach(name => {
-    counts[name] = allArtworks.filter(a =>
-      a.artist === name && (!activeTypes.length || activeTypes.includes(a.type))
-    ).length;
-  });
-  return counts;
-}
-
-function tallyTypesInContext(types) {
-  const counts = {};
-  types.forEach(type => {
-    counts[type] = allArtworks.filter(a =>
-      a.type === type && (!activeArtists.length || activeArtists.includes(a.artist))
-    ).length;
-  });
-  return counts;
-}
-
 function buildArtistPicker() {
   const listEl = document.getElementById('artist-picker-list');
   const search = document.getElementById('artist-picker-search');
@@ -1604,14 +1542,20 @@ function initQuestWelcome() {
 // each nav button explains just its own mode — no combined chooser.
 // Continuing sets that mode, then hands off to the existing sort/challenge
 // settings sheet before the list opens.
+// text() rather than a string: the pin count has to be read when the card is
+// shown, not when this file loads, or it goes stale the moment a community
+// piece lands — which is exactly how it came to claim 23 out of 26.
 const HOWTO_TEXT = {
   quest: {
     label: 'Quest',
-    text: 'Only one pin shows on the map at a time. Walk to it and check in. It reveals what it is, then your next quest appears.'
+    text: () => 'Only one pin shows on the map at a time. Walk to it and check in. It reveals what it is, then your next quest appears.'
   },
   explore: {
     label: 'Explore',
-    text: 'All 23 pins show on the map right away. Tap any one, in any order, and check in whenever you get there.'
+    text: () => {
+      const n = allArtworks.length;
+      return `All ${n} pin${n === 1 ? '' : 's'} show${n === 1 ? 's' : ''} on the map right away. Tap any one, in any order, and check in whenever you get there.`;
+    }
   }
 };
 let pendingHuntMode = null;
@@ -1695,7 +1639,7 @@ function initResumeChoice() {
 function showHowToPlay(mode) {
   pendingHuntMode = mode;
   document.getElementById('howto-mode-word').textContent = HOWTO_TEXT[mode].label;
-  document.getElementById('howto-mode-text').textContent = HOWTO_TEXT[mode].text;
+  document.getElementById('howto-mode-text').textContent = HOWTO_TEXT[mode].text();
   document.getElementById('howto-backdrop').classList.remove('hidden');
 }
 
