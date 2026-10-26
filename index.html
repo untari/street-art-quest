@@ -7,49 +7,22 @@
   <meta name="description" content="Hunt down street art and murals hidden across Sheung Wan, Hong Kong." />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=69" />
+  <link rel="stylesheet" href="css/style.css?v=74" />
 </head>
 <body>
 
   <header>
     <a href="index.html" class="logo">STREET ART <span>QUEST</span></a>
-    <!-- The only control on this side: the chip reports the mode and opens a
-         picker to change it. Picking a mode also opens the quest list, since
-         this replaced the button that used to do that. The picker's buttons
-         carry .mode-option / data-mode-choice, the same hooks the play-mode
-         sheet uses, so applyHuntMode() keeps both in step. -->
+    <!-- A segmented toggle: both modes are always on show and the filled one
+         is where you are, so there is no popup and no label to keep in sync.
+         Tapping either also opens the quest list — the toggle is the only
+         thing that opens it, so the side you're already on still has a job.
+         .mode-option / data-mode-choice are the hooks initHuntMode() and
+         applyHuntMode() already bind to. -->
     <div class="quest-mode-nav" id="quest-mode-nav" data-mode="explore">
-      <div class="opt-option-wrap">
-        <button class="mode-status" id="mode-status" aria-haspopup="true" aria-expanded="false">
-          <svg class="icon-svg icon-explore" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
-        </svg>
-          <svg class="icon-svg icon-quest" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-          <line x1="4" y1="22" x2="4" y2="15"/>
-        </svg>
-          <span id="mode-status-label">Explore mode</span>
-          <span class="mode-status-caret" aria-hidden="true">⌄</span>
-        </button>
-        <div id="mode-picker" class="opt-picker mode-picker hidden">
-          <div class="mode-picker-list">
-            <button class="mode-option" data-mode-choice="explore">
-              <svg class="icon-svg icon-explore" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
-        </svg>
-              Explore
-            </button>
-            <button class="mode-option" data-mode-choice="quest">
-              <svg class="icon-svg icon-quest" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-          <line x1="4" y1="22" x2="4" y2="15"/>
-        </svg>
-              Quest
-            </button>
-          </div>
-        </div>
+      <div class="mode-toggle" id="mode-toggle" role="group" aria-label="Hunt mode">
+        <button class="mode-option" data-mode-choice="explore">Explore</button>
+        <button class="mode-option" data-mode-choice="quest">Quest</button>
       </div>
 
       <!-- Replaces the header's type-filter chip bar and doubles as the way
@@ -58,7 +31,7 @@
            and only the difficulty dial is left. Same [data-mode] swap the
            mode chip uses for its compass and flag. -->
       <div class="filter-nav-wrap" id="filter-nav-wrap">
-        <button class="mode-status filter-status" id="filter-status" aria-haspopup="dialog" aria-label="Filter and settings">
+        <button class="nav-chip filter-status" id="filter-status" aria-haspopup="dialog" aria-label="Filter and settings">
           <svg class="icon-svg icon-filter" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
           </svg>
@@ -68,7 +41,7 @@
           </svg>
           <span id="filter-status-label">Filter</span>
           <span class="filter-status-count" id="filter-status-count" aria-hidden="true"></span>
-          <span class="mode-status-caret" aria-hidden="true">⌄</span>
+          <span class="nav-chip-caret" aria-hidden="true">⌄</span>
         </button>
       </div>
     </div>
@@ -287,6 +260,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/data.js"></script>
-  <script src="js/app.js?v=69"></script>
+  <script src="js/app.js?v=74"></script>
 </body>
 </html>

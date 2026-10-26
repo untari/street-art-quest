@@ -49,9 +49,6 @@ const HUNT_MODE_KEY = 'saq_hunt_mode';
 // 'quest'   = one quest unlocked at a time; the rest stay locked until you check in
 let huntMode = localStorage.getItem(HUNT_MODE_KEY) || 'explore';
 
-// Explore is where everyone starts; quest mode is opt-in from the navbar.
-const MODE_LABEL = { explore: 'Explore mode', quest: 'Quest mode' };
-
 const ARTIST_KEY = 'saq_artist';
 // multi-select: [] = every artist, otherwise an OR match against this list
 let activeArtists = (() => {
@@ -502,7 +499,6 @@ function refreshQuestUI() {
 }
 
 function openPlayModeBackdrop() {
-  closeModePicker();
   document.getElementById('restart-hunt-row').classList.toggle('hidden', getCompleted().length === 0);
   document.getElementById('restart-hunt-btn').classList.remove('hidden');
   document.getElementById('restart-confirm').classList.add('hidden');
@@ -568,8 +564,10 @@ function renderFilterSummary(container, { withClear = false } = {}) {
   container.innerHTML = '';
   const line = document.createElement('span');
   line.className = 'filter-summary-lines';
+  // just what the filters leave — a total alongside it sits right under the
+  // artist's name, where it reads as that artist's count rather than the map's
   const shown = allArtworks.filter(passesExploreFilters).length;
-  line.textContent = `Showing ${shown} of ${allArtworks.length} pieces`;
+  line.textContent = `Showing ${shown} piece${shown === 1 ? '' : 's'}`;
   container.appendChild(line);
 
   if (withClear) {
@@ -603,9 +601,14 @@ function initPlayMode() {
   document.getElementById('type-filter-btn').addEventListener('click', toggleTypePicker);
   document.getElementById('clear-filters-btn').addEventListener('click', clearAllFilters);
   // also opens the list — a no-op if it's already open (e.g. tweaking settings mid-hunt)
-  // just closes — the list stays open behind it if that's where you came
-  // from, and you land back on the map if you opened this from the navbar
-  document.getElementById('play-mode-done').addEventListener('click', closePlayModeBackdrop);
+  // Setting a filter is asking a question, so Done shows the answer: the list
+  // opens on what's left. Changing nothing but location precision isn't a
+  // question, so that just closes and leaves you on the map.
+  document.getElementById('play-mode-done').addEventListener('click', () => {
+    const filtered = activeArtists.length > 0 || activeTypes.length > 0;
+    closePlayModeBackdrop();
+    if (filtered) openQuestPanel(); // no-op when it's already open
+  });
   // re-explain the current mode, then land back on this same sheet
   document.getElementById('play-mode-back').addEventListener('click', () => {
     closePlayModeBackdrop();
@@ -758,20 +761,6 @@ function selectAllArtists() {
   refreshQuestUI();
 }
 
-function toggleModePicker() {
-  const picker = document.getElementById('mode-picker');
-  const willShow = picker.classList.contains('hidden');
-  picker.classList.toggle('hidden', !willShow);
-  document.getElementById('mode-status').setAttribute('aria-expanded', String(willShow));
-}
-
-function closeModePicker() {
-  const picker = document.getElementById('mode-picker');
-  if (!picker) return;
-  picker.classList.add('hidden');
-  document.getElementById('mode-status').setAttribute('aria-expanded', 'false');
-}
-
 function closeArtistPicker() {
   const picker = document.getElementById('artist-picker');
   if (picker) picker.classList.add('hidden');
@@ -879,9 +868,8 @@ function applyHuntMode() {
     syncNarrowControls();
   }
 
-  // the chip just reports; aria-live on it announces the change on its own
+  // still set: the filter chip's funnel/gear swap keys off it in CSS
   document.getElementById('quest-mode-nav').dataset.mode = huntMode;
-  document.getElementById('mode-status-label').textContent = MODE_LABEL[huntMode];
 
   document.querySelectorAll('.mode-option').forEach(b => {
     b.classList.toggle('active', b.dataset.modeChoice === huntMode);
@@ -896,7 +884,6 @@ function setHuntMode(mode) {
   localStorage.setItem(HUNT_MODE_KEY, mode);
   closeArtistPicker();
   closeTypePicker();
-  closeModePicker();
   applyHuntMode();
   syncNarrowControls();
   refreshQuestUI();
@@ -1499,14 +1486,14 @@ const WELCOME_KEY = 'saq_welcomed';
 
 function initWelcome() {
   if (!localStorage.getItem(WELCOME_KEY)) {
-    document.getElementById('mode-status').classList.add('pulsing');
+    document.getElementById('mode-toggle').classList.add('pulsing');
   }
 }
 
 // stops the pulse the moment the user is pointed elsewhere (tour start/skip)
 // or opens the list directly — never leave two contradictory CTAs on screen
 function clearWelcomePulse() {
-  document.getElementById('mode-status').classList.remove('pulsing');
+  document.getElementById('mode-toggle').classList.remove('pulsing');
   localStorage.setItem(WELCOME_KEY, '1');
 }
 
@@ -1572,30 +1559,19 @@ function handleQuestNavClick(mode) {
 }
 
 function initQuestNav() {
-  document.getElementById('mode-status').addEventListener('click', e => {
-    e.stopPropagation();
-    clearWelcomePulse();
-    toggleModePicker();
-  });
-
-  // initHuntMode() already binds these to setHuntMode; picking one also opens
-  // the list, because the picker took the place of the button that used to.
-  document.querySelectorAll('#mode-picker .mode-option').forEach(btn => {
-    btn.addEventListener('click', openQuestPanel);
+  // initHuntMode() already binds these to setHuntMode. Tapping either side
+  // also opens the list — including the side you're already on, which is
+  // what keeps the list reachable now that nothing else opens it.
+  document.querySelectorAll('#mode-toggle .mode-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      clearWelcomePulse();
+      openQuestPanel();
+    });
   });
 
   // artist, type and location precision all live in the settings sheet, so
   // the chip opens that rather than a filter dropdown of its own
   document.getElementById('filter-status').addEventListener('click', openPlayModeBackdrop);
-
-  // the mode picker hangs in the navbar over the map, so unlike the sheet's
-  // pickers it needs the usual ways out: a click anywhere else, or Escape
-  document.addEventListener('click', e => {
-    if (!document.getElementById('mode-picker').contains(e.target)) closeModePicker();
-  });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeModePicker();
-  });
 }
 
 function showResumeChoice(mode) {

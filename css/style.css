@@ -65,10 +65,46 @@ header {
    back. margin-left:auto is what pins this group to the right. */
 .quest-mode-nav { display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }
 
-/* A soft-tinted pill in the same language as .mode-option and .precision-option
-   rather than another solid button: it reads as the current state first and a
-   control second. Opening it fills teal, so the navbar shows the picker is up. */
-.mode-status {
+/* The segmented toggle: both modes always on show, the filled half is where
+   you are. Replaces a chip plus popup, so there is no open state to style and
+   no label to keep in sync — the fill is the label. */
+.mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--teal);
+  box-shadow: 0 4px 14px rgba(46,196,182,0.35);
+}
+
+.mode-option {
+  padding: 7px 15px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.92);
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+
+.mode-option:hover { color: #fff; }
+
+.mode-option.active {
+  background: #fff;
+  color: var(--teal);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.14);
+}
+
+/* The filter chip. It used to share .mode-status with the mode chip; that chip
+   is a toggle now, so this is the only pill left and carries its own name. */
+.nav-chip {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -89,35 +125,18 @@ header {
   transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 
-.mode-status:hover {
+.nav-chip:hover {
   background: rgba(46,196,182,0.22);
   border-color: var(--teal);
   transform: scale(1.03);
 }
 
-.mode-status[aria-expanded="true"] {
-  background: var(--teal);
-  border-color: var(--teal);
-  color: #fff;
-  box-shadow: 0 6px 18px rgba(46,196,182,0.4);
-}
+.nav-chip .icon-svg { color: var(--teal); }
 
-.mode-status .icon-svg { color: var(--teal); }
-.mode-status[aria-expanded="true"] .icon-svg { color: #fff; }
+.nav-chip-caret { font-size: 13px; line-height: 1; margin-left: -2px; }
 
-.mode-status-caret {
-  font-size: 13px;
-  line-height: 1;
-  margin-left: -2px;
-  transition: transform 0.18s;
-}
-
-.mode-status[aria-expanded="true"] .mode-status-caret { transform: rotate(180deg); }
-
-/* hangs off the chip's left edge so it can't run past the right of a phone */
-/* Borrows .mode-status wholesale — same pill, same open state — and only
-   parts ways when a filter is on: then it fills teal, because the map itself
-   gives no clue why pins are missing. */
+/* Only parts ways with the base pill when a filter is on: then it fills teal,
+   because the map itself gives no clue why pins are missing. */
 .filter-status { text-transform: uppercase; }
 
 /* stands in for the type name where there isn't room for it */
@@ -134,19 +153,9 @@ header {
 
 .explore-only.hidden { display: none; }
 
-/* one chip, two faces — same swap the mode chip uses for compass and flag */
+/* one chip, two faces — funnel where filters apply, gear where they don't */
 .quest-mode-nav[data-mode="explore"] #filter-status .icon-settings,
 .quest-mode-nav[data-mode="quest"]   #filter-status .icon-filter { display: none; }
-
-.mode-picker { left: 0; right: auto; min-width: 186px; }
-
-
-.mode-picker-list { display: flex; flex-direction: column; gap: 8px; }
-
-/* Only the chip swaps icons — the Quest button always wears the flag. */
-.quest-mode-nav[data-mode="explore"] #mode-status .icon-quest,
-.quest-mode-nav[data-mode="quest"]   #mode-status .icon-explore { display: none; }
-
 
 .add-btn {
   background: var(--teal);
@@ -1729,28 +1738,6 @@ header {
   color: #fff;
 }
 
-.mode-option {
-  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 13px 10px; border-radius: 24px; cursor: pointer;
-  font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800;
-  letter-spacing: 0.02em;
-  background: rgba(46,196,182,0.1); color: var(--dark); border: 1.5px solid rgba(46,196,182,0.35);
-  transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-
-.mode-option:hover {
-  transform: scale(1.03);
-  background: var(--teal); color: #fff; border-color: var(--teal);
-  box-shadow: 0 6px 18px rgba(46,196,182,0.4);
-}
-
-.mode-option:active { transform: scale(0.98); }
-
-.mode-option.active {
-  background: var(--teal); color: #fff; border-color: var(--teal);
-  box-shadow: 0 6px 18px rgba(46,196,182,0.4);
-}
-
 /* ─── QUEST BUTTON PULSE ─────────────────────── */
 @keyframes quest-pulse {
   0%   { box-shadow: 0 0 0 0 rgba(46,196,182,0.8); }
@@ -1758,7 +1745,7 @@ header {
   100% { box-shadow: 0 0 0 0 rgba(46,196,182,0); }
 }
 
-.mode-status.pulsing {
+.mode-toggle.pulsing {
   animation: quest-pulse 1.8s ease-out infinite;
 }
 
@@ -1803,10 +1790,8 @@ header {
      --header-height. */
   .quest-mode-nav { gap: 6px; }
 
-  .mode-status {
-    padding: 7px 11px;
-    gap: 6px;
-  }
+  .nav-chip { padding: 7px 11px; gap: 6px; }
+  .mode-option { padding: 7px 12px; }
 
   /* Neither "FILTER" nor a type name fits here — either one wraps Add Art onto
      a third row. The funnel reads clearly enough alone, and once a filter is on
@@ -1816,4 +1801,15 @@ header {
 
   .quest-panel { width: 100vw; left: -100vw; }
   .quest-card { width: calc(100vw - 32px); }
+}
+
+/* The toggle shows both mode names, so the three controls need 295px before
+   gaps. A 320px screen can't give that at the usual padding, and a third row
+   overhangs the fixed --header-height and gets clipped. Tighten instead. */
+@media (max-width: 359px) {
+  header { gap: 4px; padding: 0 10px; }
+  .quest-mode-nav { gap: 4px; }
+  .mode-option { padding: 7px 9px; }
+  .nav-chip { padding: 7px 9px; }
+  .add-btn { padding: 8px 10px; }
 }
