@@ -331,8 +331,12 @@ function renderQuestList() {
     list.appendChild(empty);
   }
 
-  visible.forEach(art => {
-    const num = allArtworks.indexOf(art) + 1;
+  visible.forEach((art, i) => {
+    // Used to be the piece's slot in allArtworks — data.js order with community
+    // finds tacked on, so it shifted as submissions landed and matched nothing
+    // on screen. Explore numbers rows by where they sit (nearest is 1); quest
+    // shows only finds plus the live one, so it numbers by progress instead.
+    const num = huntMode === 'quest' ? completed.length + 1 : i + 1;
     const done = completed.includes(art.id);
     // quest mode keeps the piece a mystery until check-in — show only its type.
     // everywhere else, lead with the name so a narrowed-down list reads right.
@@ -372,12 +376,26 @@ function renderQuestList() {
   });
 
   if (huntMode === 'quest') {
-    const remaining =
-      allArtworks.filter(a => !isCompleted(a.id)).length - (getActiveQuest() ? 1 : 0);
+    // every number here comes off allArtworks, so the footer grows by itself
+    // as community pieces land — nothing to bump when the roster changes
+    const total = allArtworks.length;
+    const found = allArtworks.filter(a => isCompleted(a.id)).length;
+    const remaining = total - found - (getActiveQuest() ? 1 : 0);
     if (remaining > 0) {
       const locked = document.createElement('div');
       locked.className = 'quest-locked-footer';
-      locked.textContent = `🔒 ${remaining} more quest${remaining > 1 ? 's' : ''} locked. Check in here to unlock the next`;
+      const count = document.createElement('strong');
+      count.className = 'quest-locked-count';
+      count.textContent = `🔒 ${remaining} of ${total} quest${total > 1 ? 's' : ''} still locked`;
+      const hint = document.createElement('span');
+      hint.className = 'quest-locked-hint';
+      // the count line already carries the total, so this one only adds
+      // progress — and has nothing to add on the very first quest
+      hint.textContent = found
+        ? `${found} found so far — check in to unlock the next`
+        : 'Check in to your first quest to unlock the next';
+      locked.appendChild(count);
+      locked.appendChild(hint);
       list.appendChild(locked);
     }
   }
@@ -574,7 +592,7 @@ function renderFilterSummary(container, { withClear = false, funMode = false } =
     clearBtn.addEventListener('click', () => {
       clearActiveArtist();
       clearActiveType();
-      syncFilterBar();
+      syncFilterChip();
       syncNarrowControls();
       refreshQuestUI();
     });
@@ -664,18 +682,22 @@ function clearActiveArtist() {
 
 function clearActiveType() {
   activeTypes = [];
-  syncFilterBar();
+  syncFilterChip();
 }
 
-// keep the header type-filter bar's highlight in step with activeTypes —
-// multi-select, so several chips (plus "All" when none are picked) can be active
-function syncFilterBar() {
-  document.querySelectorAll('#filters .filter-btn').forEach(b => {
-    const isActive = b.dataset.type === 'all'
-      ? activeTypes.length === 0
-      : activeTypes.includes(b.dataset.type);
-    b.classList.toggle('active', isActive);
-  });
+// keep the navbar filter chip in step with activeTypes. It names what's
+// selected rather than just saying "Filter", and [data-on] fills it teal —
+// the only thing over the map that says why pins are missing.
+function syncFilterChip() {
+  const chip = document.getElementById('filter-status');
+  if (!chip) return;
+  const label = typeFilterLabel();
+  chip.toggleAttribute('data-on', Boolean(label));
+  document.getElementById('filter-status-label').textContent = label || 'Filter';
+  // phones show this instead of the name: the name is wide enough to wrap
+  // Add Art onto a row of its own
+  document.getElementById('filter-status-count').textContent = activeTypes.length || '';
+  chip.setAttribute('aria-label', label ? `Showing ${label} only \u2014 change type filter` : 'Filter by type');
 }
 
 function toggleArtistPicker() {
@@ -748,7 +770,7 @@ function buildArtistPicker() {
 // pieces it covers on the right. Built with textContent (not innerHTML) so
 // names with "&" or other characters (e.g. "Carol Mui & Rebecca T Lin") can't
 // break the markup.
-function addPickerItem(listEl, label, count, isActive, onClick) {
+function addPickerItem(listEl, label, count, isActive, onClick, color) {
   const b = document.createElement('button');
   b.className = 'opt-picker-item' + (isActive ? ' active' : '');
   const nameEl = document.createElement('span');
@@ -756,7 +778,20 @@ function addPickerItem(listEl, label, count, isActive, onClick) {
   const countEl = document.createElement('span');
   countEl.className = 'opt-picker-count';
   countEl.textContent = count;
-  b.appendChild(nameEl);
+  if (color) {
+    // pin colours used to be readable straight off the header filter bar;
+    // with the bar gone this dot is the only legend left for them
+    const labelEl = document.createElement('span');
+    labelEl.className = 'opt-picker-label';
+    const dot = document.createElement('span');
+    dot.className = 'opt-picker-dot';
+    dot.style.background = color;
+    labelEl.appendChild(dot);
+    labelEl.appendChild(nameEl);
+    b.appendChild(labelEl);
+  } else {
+    b.appendChild(nameEl);
+  }
   b.appendChild(countEl);
   b.addEventListener('click', onClick);
   listEl.appendChild(b);
@@ -784,6 +819,7 @@ function selectAllArtists() {
 function toggleModePicker() {
   const picker = document.getElementById('mode-picker');
   const willShow = picker.classList.contains('hidden');
+  closeNavTypePicker();
   picker.classList.toggle('hidden', !willShow);
   document.getElementById('mode-status').setAttribute('aria-expanded', String(willShow));
 }
@@ -793,6 +829,25 @@ function closeModePicker() {
   if (!picker) return;
   picker.classList.add('hidden');
   document.getElementById('mode-status').setAttribute('aria-expanded', 'false');
+}
+
+// The navbar's own type picker. Separate from the sheet's toggleTypePicker:
+// this one lives over the map, so it closes on an outside click or Escape,
+// and only one navbar popup may be open at a time.
+function toggleNavTypePicker() {
+  const picker = document.getElementById('nav-type-picker');
+  const willShow = picker.classList.contains('hidden');
+  closeModePicker();
+  picker.classList.toggle('hidden', !willShow);
+  document.getElementById('filter-status').setAttribute('aria-expanded', String(willShow));
+  if (willShow) buildTypePicker();
+}
+
+function closeNavTypePicker() {
+  const picker = document.getElementById('nav-type-picker');
+  if (!picker) return;
+  picker.classList.add('hidden');
+  document.getElementById('filter-status').setAttribute('aria-expanded', 'false');
 }
 
 function closeArtistPicker() {
@@ -817,14 +872,18 @@ function toggleTypePicker() {
 }
 
 function buildTypePicker() {
-  const listEl = document.getElementById('type-picker-list');
-
   const counts = tallyBy('type');
   const types = Object.keys(counts).sort();
 
-  listEl.innerHTML = '';
-  addPickerItem(listEl, 'All types', allArtworks.length, activeTypes.length === 0, () => selectType('all'));
-  types.forEach(t => addPickerItem(listEl, t, counts[t], activeTypes.includes(t), () => selectType(t)));
+  // both the navbar chip's picker and the play-mode sheet's carry
+  // .type-picker-list, so one build keeps them identical
+  document.querySelectorAll('.type-picker-list').forEach(listEl => {
+    listEl.innerHTML = '';
+    addPickerItem(listEl, 'All types', allArtworks.length, activeTypes.length === 0,
+      () => selectType('all'), 'var(--dark)');
+    types.forEach(t => addPickerItem(listEl, t, counts[t], activeTypes.includes(t),
+      () => selectType(t), typeColor(t)));
+  });
 }
 
 // multi-select, same as artist: 'all' clears the selection, anything else
@@ -838,7 +897,7 @@ function selectType(type) {
     const i = activeTypes.indexOf(type);
     if (i === -1) activeTypes.push(type); else activeTypes.splice(i, 1);
   }
-  syncFilterBar();
+  syncFilterChip();
   buildTypePicker();
   syncNarrowControls();
   refreshQuestUI();
@@ -864,10 +923,12 @@ function initPickerOutsideClose(pickerId, wrapSel, close) {
 }
 
 function applyHuntMode() {
-  const filters = document.getElementById('filters');
-  if (filters) filters.classList.toggle('hidden', huntMode === 'quest');
+  // quest mode shows one pin at a time, so there is nothing to filter
+  const filterNav = document.getElementById('filter-nav-wrap');
+  if (filterNav) filterNav.classList.toggle('hidden', huntMode === 'quest');
 
   if (huntMode === 'quest') {
+    closeNavTypePicker();
     clearActiveType();
     clearActiveArtist();
     syncNarrowControls();
@@ -888,6 +949,7 @@ function setHuntMode(mode) {
   closeArtistPicker();
   closeTypePicker();
   closeModePicker();
+  closeNavTypePicker();
   applyHuntMode();
   syncNarrowControls();
   refreshQuestUI();
@@ -1256,33 +1318,14 @@ function attemptCoordsCheckin() {
 
 // ─── Filters ──────────────────────────────────────
 
+// The header chip bar is gone; filtering is the navbar chip's popup and the
+// play-mode sheet's picker, both built by buildTypePicker. selectType() is
+// still the single "the type filter changed" path, so the chip, both pickers
+// and the quest list's clear button stay in step.
 function initFilters() {
   buildTypeColorMap(); // refresh now that allArtworks may have grown
-  const container = document.getElementById('filters');
-  const types = [...new Set(allArtworks.map(a => a.type).filter(Boolean))].sort();
-
-  container.querySelectorAll('.filter-btn[data-type]:not([data-type="all"])').forEach(btn => btn.remove());
-
-  types.forEach(type => {
-    const btn = document.createElement('button');
-    btn.className = 'filter-btn';
-    btn.dataset.type = type;
-    btn.textContent = type;
-    btn.style.background = typeColor(type);
-    if (activeTypes.includes(type)) btn.classList.add('active');
-    container.appendChild(btn);
-  });
-  syncFilterBar(); // also corrects the static "All" chip's active state
-
-  // same code path as the settings-sheet type picker — one place owns
-  // "the type filter changed", so the header bar, the sheet, and the quest
-  // list's clear-filter button all stay in sync
-  container.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.onclick = () => {
-      selectType(btn.dataset.type);
-      closePanel();
-    };
-  });
+  buildTypePicker();
+  syncFilterChip();
 }
 
 // ─── Community submissions ────────────────────────
@@ -1588,13 +1631,21 @@ function initQuestNav() {
     btn.addEventListener('click', openQuestPanel);
   });
 
-  // this one hangs in the navbar over the map, so unlike the sheet's pickers it
-  // needs the usual ways out: a click anywhere else, or Escape
+  document.getElementById('filter-status').addEventListener('click', e => {
+    e.stopPropagation();
+    toggleNavTypePicker();
+  });
+
+  // these hang in the navbar over the map, so unlike the sheet's pickers they
+  // need the usual ways out: a click anywhere else, or Escape
   document.addEventListener('click', e => {
     if (!document.getElementById('mode-picker').contains(e.target)) closeModePicker();
+    if (!document.getElementById('nav-type-picker').contains(e.target)) closeNavTypePicker();
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeModePicker();
+    if (e.key !== 'Escape') return;
+    closeModePicker();
+    closeNavTypePicker();
   });
 }
 
@@ -1667,7 +1718,7 @@ const TOUR_STEPS = [
   { selector: '#map', title: 'The map', text: 'That glowing dot is your current quest. Tap it for a hint and to check in.' },
   { selector: '#locate-btn', title: 'Find yourself', text: 'Tap to show your position and see live distance to your next quest.' },
   { selector: '.quest-mode-nav', title: 'Explore or Quest', text: 'This says which mode you\'re in. Tap it to switch and to open your list. Explore shows every pin at once; Quest guides you to one at a time.' },
-  { selector: '#filters', title: 'Filter by type', text: 'Show just the kinds of art you\'ve found so far, and narrow your quest list.' },
+  { selector: '#filter-nav-wrap', title: 'Filter by type', text: 'Tap to show only certain kinds of art. Each type has a colour, and the pins on the map match it.' },
   { selector: '.add-btn', title: 'Add art', text: 'Spotted a piece that’s not on the map yet? Submit it here.' }
 ];
 

@@ -59,48 +59,10 @@ header {
 
 .logo span { color: var(--teal); }
 
-.filters {
-  display: flex;
-  gap: 7px;
-  flex: 1;
-  overflow-x: auto;
-  scrollbar-width: none;
-  align-items: center;
-}
-
-.filters::-webkit-scrollbar { display: none; }
-
-.filters.hidden { display: none; }
-
-.filter-btn {
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: none;
-  font-family: 'Nunito', sans-serif;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: transform 0.15s, opacity 0.15s;
-  color: #fff;
-  opacity: 0.45;
-}
-
-.filter-btn:hover { opacity: 0.75; transform: scale(1.05); }
-.filter-btn.active { opacity: 1; transform: scale(1.05); }
-
-.filter-btn[data-type="all"]          { background: var(--dark); }
-.filter-btn[data-type="Mural"]        { background: var(--pink); }
-.filter-btn[data-type="Sculpture"]    { background: var(--purple); }
-.filter-btn[data-type="Paste-up"]     { background: var(--orange); }
-.filter-btn[data-type="Sticker"]      { background: var(--green); }
-.filter-btn[data-type="Installation"] { background: var(--blue); }
-
-/* ─── MODE STATUS CHIP ──────────────────────────── */
-/* margin-left:auto (not .filters' flex:1) is what pins this to the right —
-   .filters gets display:none in quest mode, so it can't be relied on as the spacer */
+/* ─── NAVBAR CHIPS ─────────────────────────── */
+/* The header used to carry a scrolling bar of coloured type chips; filtering
+   now lives in the filter chip's popup, which bought the header a whole row
+   back. margin-left:auto is what pins this group to the right. */
 .quest-mode-nav { display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }
 
 /* A soft-tinted pill in the same language as .mode-option and .precision-option
@@ -153,7 +115,30 @@ header {
 .mode-status[aria-expanded="true"] .mode-status-caret { transform: rotate(180deg); }
 
 /* hangs off the chip's left edge so it can't run past the right of a phone */
+/* Borrows .mode-status wholesale — same pill, same open state — and only
+   parts ways when a filter is on: then it fills teal, because the map itself
+   gives no clue why pins are missing. */
+.filter-status { text-transform: uppercase; }
+
+/* stands in for the type name where there isn't room for it */
+.filter-status-count { display: none; }
+
+.filter-status[data-on] {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(46,196,182,0.3);
+}
+
+.filter-status[data-on] .icon-svg { color: #fff; }
+
+.filter-nav-wrap.hidden { display: none; }
+
 .mode-picker { left: 0; right: auto; min-width: 186px; }
+
+/* anchored to its right edge — this chip sits mid-row, so left:0 would run it
+   off the side of a phone */
+.nav-type-picker { left: auto; right: 0; min-width: 210px; }
 
 .mode-picker-list { display: flex; flex-direction: column; gap: 8px; }
 
@@ -476,6 +461,9 @@ header {
 }
 
 .quest-locked-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   margin: 10px 16px 16px;
   padding: 14px 16px;
   border: 1.5px dashed var(--border);
@@ -484,6 +472,17 @@ header {
   font-size: 11px; font-weight: 800; letter-spacing: 0.03em;
   text-transform: uppercase; color: var(--muted);
   background: var(--bg);
+}
+
+/* the tally carries the weight; the instruction underneath stays quiet */
+.quest-locked-count { color: var(--dark); font-size: 12px; }
+
+.quest-locked-hint {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--muted);
 }
 
 .quest-list { overflow-y: auto; flex: 1; }
@@ -1607,6 +1606,21 @@ header {
 .opt-picker-item:hover { background: rgba(46,196,182,0.12); }
 .opt-picker-item.active { background: var(--teal); color: #fff; }
 
+.opt-picker-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.opt-picker-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,0.85);
+}
+
 .opt-picker-count {
   flex-shrink: 0;
   font-size: 11px;
@@ -1738,7 +1752,8 @@ header {
 @media (max-width: 600px) {
   :root {
     --panel-width: 100vw;
-    --header-height: 128px;
+    /* two rows now (logo, then the chips) — the filter bar used to be a third */
+    --header-height: 96px;
   }
 
   header {
@@ -1748,8 +1763,7 @@ header {
     align-items: center;
   }
 
-  /* Row 1: logo alone — the mode chip, its switch button and Add Art don't fit
-     beside it */
+  /* Row 1: logo alone — the two chips and Add Art don't fit beside it */
   .logo {
     font-size: 16px;
     order: 1;
@@ -1770,9 +1784,9 @@ header {
     padding: 8px 12px;
   }
 
-  /* The mode chip is wider than the Explore button it replaced, so the pills
-     tighten on phones to keep chip + switch + Add Art on one row. A fourth row
-     would push the filter bar past the fixed --header-height and clip it. */
+  /* Two chips plus Add Art have to share one row, so the pills tighten.
+     Anything wider wraps to a third row and gets clipped by the fixed
+     --header-height. */
   .quest-mode-nav { gap: 6px; }
 
   .mode-status {
@@ -1780,22 +1794,11 @@ header {
     gap: 6px;
   }
 
-  /* Row 3: filters full-width */
-  .filters {
-    order: 3;
-    width: 100%;
-    flex-basis: 100%;
-    padding-bottom: 8px;
-    gap: 6px;
-    mask-image: linear-gradient(to right, black 80%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
-  }
-
-  .filter-btn {
-    padding: 5px 12px;
-    font-size: 10px;
-    flex-shrink: 0;
-  }
+  /* Neither "FILTER" nor a type name fits here — either one wraps Add Art onto
+     a third row. The funnel reads clearly enough alone, and once a filter is on
+     the chip fills teal and shows how many types are picked; tapping names them. */
+  .filter-status #filter-status-label { display: none; }
+  .filter-status[data-on] .filter-status-count { display: inline; }
 
   .quest-panel { width: 100vw; left: -100vw; }
   .quest-card { width: calc(100vw - 32px); }

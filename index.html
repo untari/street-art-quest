@@ -7,15 +7,12 @@
   <meta name="description" content="Hunt down street art and murals hidden across Sheung Wan, Hong Kong." />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/style.css?v=56" />
+  <link rel="stylesheet" href="css/style.css?v=59" />
 </head>
 <body>
 
   <header>
     <a href="index.html" class="logo">STREET ART <span>QUEST</span></a>
-    <div class="filters" id="filters">
-      <button class="filter-btn active" data-type="all">All</button>
-    </div>
     <!-- The only control on this side: the chip reports the mode and opens a
          picker to change it. Picking a mode also opens the quest list, since
          this replaced the button that used to do that. The picker's buttons
@@ -52,6 +49,26 @@
               Quest
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Replaces the header's type-filter chip bar. One tap still opens the
+           type list, but it's a popup now, so the header loses a whole row.
+           The list carries a colour dot per type, which is the only legend
+           left for the pin colours the bar used to spell out. It shares
+           .type-picker-list (and so buildTypePicker) with the play-mode
+           sheet's picker, so both show the same state. -->
+      <div class="opt-option-wrap filter-nav-wrap" id="filter-nav-wrap">
+        <button class="mode-status filter-status" id="filter-status" aria-haspopup="true" aria-expanded="false" aria-label="Filter by type">
+          <svg class="icon-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <span id="filter-status-label">Filter</span>
+          <span class="filter-status-count" id="filter-status-count" aria-hidden="true"></span>
+          <span class="mode-status-caret" aria-hidden="true">⌄</span>
+        </button>
+        <div id="nav-type-picker" class="opt-picker nav-type-picker hidden">
+          <div id="nav-type-picker-list" class="opt-picker-list type-picker-list"></div>
         </div>
       </div>
     </div>
@@ -221,7 +238,7 @@
             <span class="narrow-filter-caret">⌄</span>
           </button>
           <div id="type-picker" class="opt-picker hidden">
-            <div id="type-picker-list" class="opt-picker-list"></div>
+            <div id="type-picker-list" class="opt-picker-list type-picker-list"></div>
           </div>
         </div>
       </div>
@@ -288,6 +305,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/data.js"></script>
-  <script src="js/app.js?v=56"></script>
+  <script src="js/app.js?v=59"></script>
 </body>
 </html>
